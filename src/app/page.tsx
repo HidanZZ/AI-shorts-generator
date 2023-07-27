@@ -4,6 +4,7 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
+	const router = useRouter();
 	return (
 		<Box
 			sx={{
@@ -24,8 +25,11 @@ export default function Home() {
 				sx={{
 					mb: 2,
 				}}
+				onClick={() => {
+					router.push("/generate");
+				}}
 			>
-				Click Me
+				Start
 			</Button>
 		</Box>
 	);

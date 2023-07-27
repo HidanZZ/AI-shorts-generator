@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import ThemeRegistry from "./ThemeRegistry";
+import { Box } from "@mui/material";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
 	title: "Create Next App",
@@ -14,7 +16,26 @@ export default function RootLayout({
 	return (
 		<html lang='en'>
 			<body>
-				<ThemeRegistry options={{ key: "mui" }}>{children}</ThemeRegistry>
+				<ThemeRegistry options={{ key: "mui" }}>
+					<Box
+						sx={{
+							p: { xs: 2, sm: 3, md: 4 },
+						}}
+					>
+						{children}
+					</Box>
+					<Toaster
+						toastOptions={{
+							style: {
+								border: "1px solid #000",
+								padding: "16px",
+								color: "#000",
+								background: "#fff",
+								borderRadius: "0px",
+							},
+						}}
+					/>
+				</ThemeRegistry>
 			</body>
 		</html>
 	);
