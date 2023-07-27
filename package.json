@@ -9,11 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/fluent-ffmpeg": "^2.1.21",
     "@types/node": "20.4.5",
     "@types/react": "18.2.17",
     "@types/react-dom": "18.2.7",
+    "bull": "^4.10.4",
+    "elevenlabs-node": "^1.1.3",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.12",
+    "fluent-ffmpeg": "^2.1.2",
     "next": "13.4.12",
     "react": "18.2.0",
     "react-dom": "18.2.0",
