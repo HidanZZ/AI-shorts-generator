@@ -75,7 +75,7 @@ export default function Settings() {
 								}}
 								htmlFor='my-input'
 							>
-								API Key
+								Eleven Labs API Key
 							</InputLabel>
 							{Loading ? (
 								<Skeleton
