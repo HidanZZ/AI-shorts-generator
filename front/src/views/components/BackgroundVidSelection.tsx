@@ -12,10 +12,8 @@ import {
 	useMediaQuery,
 	Theme,
 } from "@mui/material";
-import axios from "axios";
 import { toast } from "react-hot-toast";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import { set } from "react-hook-form";
+import api from "@/lib/axios";
 
 type Video = {
 	id: string;
@@ -55,9 +53,9 @@ function BackgroundVidSelection({
 
 	useEffect(() => {
 		// 👨‍💻 Replace this URL with the actual endpoint to fetch the data
-		const url = "/api/config/assets";
+		const url = "/settings/assets";
 
-		axios
+		api
 			.get(url)
 			.then((response) => {
 				setVideos(response.data.assets);
