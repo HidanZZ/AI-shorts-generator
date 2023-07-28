@@ -11,6 +11,7 @@ export async function POST(req: Request) {
 			{ status: 400 }
 		);
 	}
+	checkDataFolderExist();
 
 	let data: any = {};
 
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
 			{ message: "error while saving api key" },
 			{ status: 500 }
 		);
+	}
+}
+function checkDataFolderExist() {
+	if (!fs.existsSync("./data")) {
+		fs.mkdirSync("./data");
 	}
 }
 

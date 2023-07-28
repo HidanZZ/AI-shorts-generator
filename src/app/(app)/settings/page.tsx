@@ -14,16 +14,9 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import axios from "axios";
 type ApiKey = {
 	elevenLabsApiKey: string;
-};
-const getApiKey = async (): Promise<any> => {
-	const data = await fetch("/api/config/apikeys", {
-		cache: "no-cache",
-	});
-	const keys: ApiKey = await data.json();
-
-	return keys;
 };
 
 export default function Settings() {
@@ -32,22 +25,21 @@ export default function Settings() {
 	const [Loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		getApiKey().then((keys: ApiKey) => {
-			setApiKey(keys);
+		axios.get("/api/config/apikeys").then((res) => {
+			setApiKey(res.data);
 			setLoading(false);
 		});
 	}, []);
 
 	const handleSave = async () => {
-		await fetch("/api/config/apikeys", {
-			method: "POST",
-			body: JSON.stringify(apiKey),
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				if (data.message === "ok") {
-					toast.success("API Key saved");
-				}
+		axios
+			.post("/api/config/apikeys", apiKey)
+			.then(() => {
+				toast.success("Saved API Key");
+			})
+			.catch((err) => {
+				toast.error("Failed to save API Key");
+				console.error(err);
 			});
 	};
 	const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 
-const assetsPath = "./data/assets.json";
+export const assetsPath = "./data/assets.json";
 
-type AssetFile = {
+export type AssetFile = {
 	assets: Asset[];
 };
 
@@ -70,43 +70,6 @@ export async function POST(req: Request) {
 	// add the new asset
 	const newId = data.assets.length + 1;
 	data.assets.push({ id: newId, name, url });
-
-	try {
-		fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
-		return NextResponse.json({ message: "ok" });
-	} catch (err) {
-		console.log(err);
-		return NextResponse.json(
-			{ message: "error while saving asset" },
-			{ status: 500 }
-		);
-	}
-}
-
-export async function DELETE(req: Request) {
-	const { id } = await req.json();
-	if (!id) {
-		return NextResponse.json(
-			{ message: "missing key ['id']" },
-
-			{ status: 400 }
-		);
-	}
-
-	let data: AssetFile = { assets: [] };
-
-	// Check if the file exists
-	if (fs.existsSync(assetsPath)) {
-		// Read and parse existing data
-		const rawData = fs.readFileSync(assetsPath, "utf8");
-		data = JSON.parse(rawData);
-	}
-
-	// remove the asset
-	const index = data.assets.findIndex((asset) => asset.id === id);
-	if (index !== -1) {
-		data.assets.splice(index, 1);
-	}
 
 	try {
 		fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
