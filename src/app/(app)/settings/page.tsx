@@ -15,6 +15,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import { set } from "react-hook-form";
 type ApiKey = {
 	elevenLabsApiKey: string;
 };
@@ -25,10 +26,15 @@ export default function Settings() {
 	const [Loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		axios.get("/api/config/apikeys").then((res) => {
-			setApiKey(res.data);
-			setLoading(false);
-		});
+		axios
+			.get("/api/config/apikeys")
+			.then((res) => {
+				setApiKey(res.data);
+				setLoading(false);
+			})
+			.catch((err) => {
+				setLoading(false);
+			});
 	}, []);
 
 	const handleSave = async () => {

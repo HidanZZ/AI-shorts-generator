@@ -17,23 +17,22 @@ import { toast } from "react-hot-toast";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { set } from "react-hook-form";
 
-type Voice = {
-	voice_id: string;
+type Video = {
+	id: string;
 	name: string;
-	preview_url: string;
+	url: string;
 };
 
-function VoiceSelection({
+function BackgroundVidSelection({
 	value,
 	onChange,
 }: {
 	value: string;
 	onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-	const [voices, setVoices] = useState<Voice[]>([]);
+	const [videos, setVideos] = useState<Video[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 	const [displayCount, setDisplayCount] = useState(0);
 	const [amountToDisplay, setAmountToDisplay] = useState(5);
 	const mdUp = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -56,37 +55,29 @@ function VoiceSelection({
 
 	useEffect(() => {
 		// 👨‍💻 Replace this URL with the actual endpoint to fetch the data
-		const url = "/api/voices";
+		const url = "/api/config/assets";
 
 		axios
 			.get(url)
 			.then((response) => {
-				setVoices(response.data.voices);
+				setVideos(response.data.assets);
 				setLoading(false);
-				if (response.data.voices.length > 0) {
+				if (response.data.assets.length > 0) {
 					onChange({
 						target: {
-							value: response.data.voices[0].voice_id,
+							value: response.data.assets[0].id,
 						},
 					} as React.ChangeEvent<HTMLInputElement>);
 				}
 			})
 			.catch((error) => {
-				toast.error("Error fetching voices");
+				toast.error("Error fetching videos");
 				setError(
-					"Error fetching voices, please check the api key in settings and try again"
+					"Error fetching videos, please go to assets page and add videos"
 				);
 			});
 	}, []);
 
-	const handlePlay = (url: string) => {
-		if (audio) {
-			audio.pause();
-		}
-		const newAudio = new Audio(url);
-		setAudio(newAudio);
-		newAudio.play();
-	};
 	const handleShowMore = () => {
 		setDisplayCount((currentCount) => currentCount + amountToDisplay);
 	};
@@ -95,7 +86,13 @@ function VoiceSelection({
 			Math.max(currentCount - amountToDisplay, amountToDisplay)
 		);
 	};
-
+	const handleCardClick = (id: string) => {
+		onChange({
+			target: {
+				value: id,
+			},
+		} as React.ChangeEvent<HTMLInputElement>);
+	};
 	return (
 		<FormControl component='fieldset' fullWidth>
 			<Grid
@@ -106,24 +103,24 @@ function VoiceSelection({
 				value={value}
 				onChange={onChange}
 			>
-				{voices.slice(0, displayCount).map((voice) => (
-					<Grid
-						item
-						key={voice.voice_id}
-						className='fade-in'
-						xs={12}
-						sm={6}
-						md={2}
-					>
-						<Card sx={{ display: "flex", flexDirection: "column", mb: 2 }}>
+				{videos.slice(0, displayCount).map((video) => (
+					<Grid item key={video.id} className='fade-in' xs={12} sm={6} md={2}>
+						<Card
+							sx={{
+								display: "flex",
+								flexDirection: "column",
+								mb: 2,
+								cursor: "pointer",
+							}}
+							onClick={() => {
+								handleCardClick(video.id);
+							}}
+						>
 							<Box sx={{ display: "flex", alignItems: "center" }}>
-								<IconButton onClick={() => handlePlay(voice.preview_url)}>
-									<PlayArrowIcon fontSize='small' />
-								</IconButton>
 								<FormControlLabel
-									value={voice.voice_id}
+									value={video.id}
 									control={<Radio />}
-									label={voice.name}
+									label={video.name}
 									labelPlacement='start'
 									sx={{ ml: 0 }}
 								/>
@@ -142,7 +139,7 @@ function VoiceSelection({
 					{error}
 				</Box>
 			)}
-			{voices.length != 0 && (
+			{videos.length != 0 && (
 				<Box
 					sx={{
 						display: "flex",
@@ -150,7 +147,7 @@ function VoiceSelection({
 						mt: 2,
 					}}
 				>
-					{displayCount < voices.length && (
+					{displayCount < videos.length && (
 						<Button sx={{ mx: 2 }} onClick={handleShowMore}>
 							Show More
 						</Button>
@@ -166,4 +163,4 @@ function VoiceSelection({
 	);
 }
 
-export default VoiceSelection;
+export default BackgroundVidSelection;

@@ -7,17 +7,20 @@ import * as yup from "yup";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import VoiceSelection from "@/views/components/VoiceSelection";
+import BackgroundVidSelection from "@/views/components/BackgroundVidSelection";
 
 export default function Generate() {
 	const schema = yup.object().shape({
 		redditQuestion: yup.string().required(),
 		redditAnswer: yup.string().required(),
 		voice: yup.string().required(),
+		video: yup.string().required(),
 	});
 	const defaultValues = {
 		redditQuestion: "",
 		redditAnswer: "",
 		voice: "",
+		video: "",
 	};
 
 	const {
@@ -113,6 +116,25 @@ export default function Generate() {
 								name='voice'
 								control={control}
 								render={({ field }) => <VoiceSelection {...field} />}
+							/>
+						</Card>
+					</Grid>
+					<Grid item xs={12}>
+						<Card>
+							<InputLabel
+								sx={{
+									color: "primary.main",
+									mx: 2,
+									mb: 1,
+								}}
+								htmlFor='video'
+							>
+								Background Video
+							</InputLabel>
+							<Controller
+								name='video'
+								control={control}
+								render={({ field }) => <BackgroundVidSelection {...field} />}
 							/>
 						</Card>
 					</Grid>
