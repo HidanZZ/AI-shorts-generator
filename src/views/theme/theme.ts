@@ -78,7 +78,14 @@ const theme = createTheme({
 				},
 			},
 		},
-		// Add styleOverrides for any other MUI components you want to customize
+		//add black border to table
+		MuiTableCell: {
+			styleOverrides: {
+				root: {
+					border: "1px solid #000000", // Black border
+				},
+			},
+		},
 	},
 });
 
