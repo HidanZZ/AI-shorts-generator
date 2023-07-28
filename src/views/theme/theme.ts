@@ -17,6 +17,18 @@ const theme = createTheme({
 		borderRadius: 0, // Rectangular shape for all components
 	},
 	components: {
+		MuiCssBaseline: {
+			styleOverrides: {
+				".fade-in": {
+					animation: "fadeIn ease 1s",
+				},
+
+				"@keyframes fadeIn": {
+					"0%": { opacity: 0 },
+					"100%": { opacity: 1 },
+				},
+			},
+		},
 		MuiButton: {
 			styleOverrides: {
 				root: {
@@ -56,6 +68,13 @@ const theme = createTheme({
 				root: {
 					// border: "1px solid #000000", // Black border
 					boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)", // Slight shadow
+				},
+			},
+		},
+		MuiRadio: {
+			styleOverrides: {
+				root: {
+					color: "#000000", // Black text
 				},
 			},
 		},
