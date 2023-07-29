@@ -12,10 +12,9 @@ import {
 	useMediaQuery,
 	Theme,
 } from "@mui/material";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import { set } from "react-hook-form";
+import api from "@/lib/axios";
 
 type Voice = {
 	voice_id: string;
@@ -56,9 +55,9 @@ function VoiceSelection({
 
 	useEffect(() => {
 		// 👨‍💻 Replace this URL with the actual endpoint to fetch the data
-		const url = "/api/voices";
+		const url = "/voices";
 
-		axios
+		api
 			.get(url)
 			.then((response) => {
 				setVoices(response.data.voices);

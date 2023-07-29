@@ -1,9 +1,10 @@
 // routes/voiceRoutes.ts
-import express from 'express';
-import { getVoicesController } from '../controllers/voiceController';
 
-const voiceRoutes = express.Router();
+import { Router } from "express";
+import { getVoicesController } from "../controllers/voiceController";
 
-voiceRoutes.get('/voices', getVoicesController);
+const voiceRouter = Router();
 
-export default voiceRoutes;
+voiceRouter.get("/voices", getVoicesController);
+
+export default voiceRouter;

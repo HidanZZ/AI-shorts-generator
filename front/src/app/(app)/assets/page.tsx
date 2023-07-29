@@ -15,12 +15,12 @@ import {
 	TextField,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import AddIcon from "@mui/icons-material/Add";
 import * as yup from "yup";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
+import api from "@/lib/axios";
 
 type Asset = {
 	id: number;
@@ -63,7 +63,7 @@ export default function Assets() {
 	});
 	const fetchAssets = async () => {
 		try {
-			const response = await axios.get("/api/config/assets"); // replace with your API endpoint
+			const response = await api.get("/settings/assets"); // replace with your API endpoint
 			setAssets(response.data.assets);
 		} catch (err: any) {
 			console.log(err);
@@ -76,8 +76,8 @@ export default function Assets() {
 	}, []);
 
 	const handleDelete = async (id: number) => {
-		axios
-			.delete(`/api/config/assets/${id}`)
+		api
+			.delete(`/settings/assets/${id}`)
 			.then((res) => {
 				toast.success("Deleted Asset");
 				fetchAssets();
@@ -91,8 +91,8 @@ export default function Assets() {
 	};
 
 	const handleSave = async (data: AssetForm) => {
-		axios
-			.post("/api/config/assets", data)
+		api
+			.post("/settings/assets", data)
 			.then((res) => {
 				toast.success("Saved Asset");
 				fetchAssets();
