@@ -11,6 +11,7 @@ import {
 	Button,
 	useMediaQuery,
 	Theme,
+	Skeleton,
 } from "@mui/material";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
@@ -66,6 +67,8 @@ function BackgroundVidSelection({
 							value: response.data.assets[0].id,
 						},
 					} as React.ChangeEvent<HTMLInputElement>);
+				} else {
+					setError("No videos found, please go to assets page and add videos");
 				}
 			})
 			.catch((error) => {
@@ -101,6 +104,9 @@ function BackgroundVidSelection({
 				value={value}
 				onChange={onChange}
 			>
+				{loading && (
+					<Skeleton variant='rectangular' width='100%' height='100px' />
+				)}
 				{videos.slice(0, displayCount).map((video) => (
 					<Grid item key={video.id} className='fade-in' xs={12} sm={6} md={2}>
 						<Card

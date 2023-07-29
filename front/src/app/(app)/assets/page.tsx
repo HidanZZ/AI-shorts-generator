@@ -13,6 +13,7 @@ import {
 	Grid,
 	InputLabel,
 	TextField,
+	Skeleton,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { toast } from "react-hot-toast";
@@ -32,6 +33,7 @@ type AssetForm = Omit<Asset, "id">;
 
 export default function Assets() {
 	const [assets, setAssets] = useState<Asset[]>([]);
+	const [loading, setLoading] = useState(true);
 	const [expanded, setExpanded] = useState(false);
 
 	const handleAddClick = () => {
@@ -65,9 +67,10 @@ export default function Assets() {
 		try {
 			const response = await api.get("/settings/assets"); // replace with your API endpoint
 			setAssets(response.data.assets);
+			setLoading(false);
 		} catch (err: any) {
 			console.log(err);
-
+			setLoading(false);
 			toast.error(err.response.data.message ?? "Failed to fetch assets");
 		}
 	};
@@ -216,6 +219,13 @@ export default function Assets() {
 				)}
 				<Table>
 					<TableBody>
+						{loading && (
+							<TableRow>
+								<TableCell align='center' colSpan={3}>
+									<Skeleton variant='rectangular' width='100%' />
+								</TableCell>
+							</TableRow>
+						)}
 						{assets.length === 0 && (
 							<TableRow>
 								<TableCell align='center' colSpan={3}>

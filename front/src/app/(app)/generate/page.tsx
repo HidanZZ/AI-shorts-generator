@@ -8,8 +8,12 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import VoiceSelection from "@/views/components/VoiceSelection";
 import BackgroundVidSelection from "@/views/components/BackgroundVidSelection";
+import JobStatus from "@/views/components/TestJobProgress";
+import api from "@/lib/axios";
 
 export default function Generate() {
+	const [jobId, setJobId] = React.useState<string>("");
+	const [completed, setCompleted] = React.useState<boolean>(true);
 	const schema = yup.object().shape({
 		redditQuestion: yup.string().required(),
 		redditAnswer: yup.string().required(),
@@ -34,6 +38,13 @@ export default function Generate() {
 		mode: "onSubmit",
 		resolver: yupResolver(schema),
 	});
+	const onSubmit = (data: any) => {
+		api.post("/generate", data).then((res) => {
+			setJobId(res.data.jobId);
+			setCompleted(false);
+		});
+	};
+
 	return (
 		<Card>
 			<CardContent>
@@ -143,16 +154,20 @@ export default function Generate() {
 							sx={{
 								mx: 2,
 							}}
+							disabled={!completed}
 							variant='contained'
 							color='primary'
 							onClick={handleSubmit((data) => {
 								console.log(data);
+
+								onSubmit(data);
 							})}
 						>
 							Generate
 						</Button>
 					</Grid>
 				</Grid>
+				<JobStatus jobId={jobId} setCompleted={setCompleted} />
 			</CardContent>
 		</Card>
 	);

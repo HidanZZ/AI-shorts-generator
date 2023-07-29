@@ -11,6 +11,7 @@ import {
 	Button,
 	useMediaQuery,
 	Theme,
+	Skeleton,
 } from "@mui/material";
 import { toast } from "react-hot-toast";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -105,6 +106,9 @@ function VoiceSelection({
 				value={value}
 				onChange={onChange}
 			>
+				{loading && (
+					<Skeleton variant='rectangular' width='100%' height='100px' />
+				)}
 				{voices.slice(0, displayCount).map((voice) => (
 					<Grid
 						item
