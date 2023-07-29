@@ -1,26 +1,44 @@
 // pages/api/start-job.js
 import Queue, { Job } from "bull";
 import { Request, Response } from "express";
+import { getAudio, getAudioTransciption } from "../lib/steps";
+import fs from "fs";
+import { convertMp3ToWav } from "../utils/audioUtils";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 const logProgress = (job: Job, message: string, progress: number) => {
 	job.progress({ message, progress }); // report progress
 };
 videoProcessingQueue.process(async (job, done) => {
-	// Your video processing logic here
-	// Example:
-	console.log("job.data", job.data);
+	const { redditAnswer, redditQuestion, voice, video } = job.data;
 
 	try {
-		//log progress every second
+		//const tempaudiopath = "C:\Users\hidanz\AppData\Local\Temp\tempAudio.mp3"
+		// Step 1: Generate audio from text
+		logProgress(job, "Generating question audio from text", 0);
+		const tempQuestionAudio = await getAudio(redditQuestion, voice);
 
-		logProgress(job, "Starting video processing", 0);
-		for (let i = 0; i <= 100; i += 10) {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			logProgress(job, `Processing step ${i}`, i);
-		}
-		console.log("job done");
+		const tempQuestionAudioWav = await convertMp3ToWav(tempQuestionAudio);
+		console.log("tempQuestionAudio", tempQuestionAudioWav);
+		logProgress(job, "Getting transcription", 0.5);
+		const tempQuestionTranscription = await getAudioTransciption(
+			tempQuestionAudioWav
+		);
+		console.log("tempQuestionTranscription", tempQuestionTranscription);
 
+		// logProgress(job, "Generating answer audio from text", 0.5);
+		// const tempAnswerAudio = await getAudio(redditAnswer, voice);
+
+		//deleting tempQuestionAudio
+		// logProgress(job, "Deleting tempQuestionAudio", 50);
+		// fs.unlink(tempQuestionAudio, (err) => {
+		// 	if (err) {
+		// 		done(err);
+		// 		return;
+		// 	}
+		// });
+
+		logProgress(job, "Generating video", 100);
 		done(null, { message: "Video processed" });
 	} catch (error: any) {
 		console.log("error", error);
@@ -30,13 +48,16 @@ videoProcessingQueue.process(async (job, done) => {
 });
 
 export async function startJob(req: Request, res: Response) {
-	const { redditAnswer } = await req.body;
+	const { redditQuestion, redditAnswer, voice, video } = await req.body;
 	if (!redditAnswer) {
 		return res.status(400).json({ message: "missing key ['redditAnswer']" });
 	}
 
 	const job = await videoProcessingQueue.add({
 		redditAnswer,
+		redditQuestion,
+		voice,
+		video,
 	});
 
 	return res.json({ jobId: job.id });

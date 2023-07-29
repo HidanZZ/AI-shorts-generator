@@ -5,7 +5,6 @@ import {
 	assetsPath,
 	checkApiKeyExists,
 	checkAssetsExists,
-	checkFolderExist,
 	isUrlYoutube,
 } from "../utils/dataFileUtils";
 import fs from "fs";
@@ -28,7 +27,6 @@ export async function setApiKey(req: Request, res: Response) {
 	}
 
 	let data: any = {};
-	checkFolderExist();
 	console.log("apiKeysPath", apiKeysPath);
 
 	// Check if the file exists
@@ -73,7 +71,6 @@ export async function addAsset(req: Request, res: Response) {
 	}
 
 	let data: AssetFile = { assets: [] };
-	checkFolderExist();
 
 	// Check if the file exists
 	if (fs.existsSync(assetsPath)) {

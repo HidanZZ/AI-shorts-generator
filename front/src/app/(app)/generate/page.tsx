@@ -72,7 +72,7 @@ export default function Generate() {
 									id='reddit-question'
 									type='text'
 									multiline
-									charLimit={300}
+									charLimit={200}
 									error={Boolean(errors.redditQuestion)}
 									helperText={errors.redditQuestion?.message}
 									{...field}
@@ -103,7 +103,7 @@ export default function Generate() {
 									id='reddit-answer'
 									type='text'
 									multiline
-									charLimit={10000}
+									charLimit={1000}
 									error={Boolean(errors.redditAnswer)}
 									helperText={errors.redditAnswer?.message}
 									{...field}
