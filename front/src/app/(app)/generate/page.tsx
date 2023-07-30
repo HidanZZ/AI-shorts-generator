@@ -72,7 +72,7 @@ export default function Generate() {
 									id='reddit-question'
 									type='text'
 									multiline
-									charLimit={200}
+									// charLimit={200}
 									error={Boolean(errors.redditQuestion)}
 									helperText={errors.redditQuestion?.message}
 									{...field}

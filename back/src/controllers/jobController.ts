@@ -3,7 +3,7 @@ import Queue, { Job } from "bull";
 import { Request, Response } from "express";
 import { getAudio, getAudioTransciption } from "../lib/steps";
 import fs from "fs";
-import { convertMp3ToWav } from "../utils/audioUtils";
+import { convertMp3ToWav, improveTranscription } from "../utils";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 const logProgress = (job: Job, message: string, progress: number) => {
@@ -13,30 +13,27 @@ videoProcessingQueue.process(async (job, done) => {
 	const { redditAnswer, redditQuestion, voice, video } = job.data;
 
 	try {
-		//const tempaudiopath = "C:\Users\hidanz\AppData\Local\Temp\tempAudio.mp3"
+		const tempQuestionAudio = "/tmp/big-speech.mp3";
 		// Step 1: Generate audio from text
 		logProgress(job, "Generating question audio from text", 0);
-		const tempQuestionAudio = await getAudio(redditQuestion, voice);
+		// const tempQuestionAudio = await getAudio(redditQuestion, voice);
 
 		const tempQuestionAudioWav = await convertMp3ToWav(tempQuestionAudio);
+		// const tempQuestionAudioWav = "/tmp/audio-1690712781816-temp.wav";
 		console.log("tempQuestionAudio", tempQuestionAudioWav);
 		logProgress(job, "Getting transcription", 0.5);
 		const tempQuestionTranscription = await getAudioTransciption(
 			tempQuestionAudioWav
 		);
 		console.log("tempQuestionTranscription", tempQuestionTranscription);
-
+		logProgress(job, "Combining transcriptions", 0.5);
+		const newTempQuestionTranscription = improveTranscription(
+			tempQuestionTranscription,
+			redditQuestion
+		);
+		console.log("newTempQuestionTranscription", newTempQuestionTranscription);
 		// logProgress(job, "Generating answer audio from text", 0.5);
 		// const tempAnswerAudio = await getAudio(redditAnswer, voice);
-
-		//deleting tempQuestionAudio
-		// logProgress(job, "Deleting tempQuestionAudio", 50);
-		// fs.unlink(tempQuestionAudio, (err) => {
-		// 	if (err) {
-		// 		done(err);
-		// 		return;
-		// 	}
-		// });
 
 		logProgress(job, "Generating video", 100);
 		done(null, { message: "Video processed" });

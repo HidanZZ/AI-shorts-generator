@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 import path from "path";
 import os from "os";
 dotenv.config();
-export const apiKeysPath = path.join(os.tmpdir(), "apiKeys.json");
-export const assetsPath = path.join(os.tmpdir(), "assets.json");
+export const apiKeysPath = path.join(os.homedir(), "apiKeys.json");
+export const assetsPath = path.join(os.homedir(), "assets.json");
 export function checkApiKeyExists() {
 	// Check if the file exists
 	if (fs.existsSync(apiKeysPath)) {
