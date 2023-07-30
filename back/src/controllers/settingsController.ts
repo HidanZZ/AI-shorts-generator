@@ -9,6 +9,11 @@ import {
 } from "../utils/dataFileUtils";
 import fs from "fs";
 import { AssetFile } from "../types/data";
+import {
+	addAssetService,
+	deleteAssetService,
+	getAssetByIdService,
+} from "../services/assetsService";
 export async function getApiKey(req: Request, res: Response) {
 	const elevenLabsApiKey = checkApiKeyExists();
 	if (elevenLabsApiKey) {
@@ -70,24 +75,10 @@ export async function addAsset(req: Request, res: Response) {
 		return res.status(400).json({ message: "url is not a youtube url" });
 	}
 
-	let data: AssetFile = { assets: [] };
-
-	// Check if the file exists
-	if (fs.existsSync(assetsPath)) {
-		// Read and parse existing data
-		const rawData = fs.readFileSync(assetsPath, "utf8");
-		data = JSON.parse(rawData);
-	}
-
-	// add the new asset
-	const newId = data.assets.length + 1;
-	data.assets.push({ id: newId, name, url });
-
 	try {
-		fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
+		await addAssetService(name, url);
 		return res.json({ message: "ok" });
 	} catch (err) {
-		console.log(err);
 		return res.status(500).json({ message: "error while saving asset" });
 	}
 }
@@ -99,27 +90,25 @@ export async function deleteAsset(req: Request, res: Response) {
 		return res.status(400).json({ message: "missing key ['id']" });
 	}
 
-	let data: AssetFile = { assets: [] };
-
-	// Check if the file exists
-	if (fs.existsSync(assetsPath)) {
-		// Read and parse existing data
-		const rawData = fs.readFileSync(assetsPath, "utf8");
-		data = JSON.parse(rawData);
-	}
-
-	// remove the asset
-	const index = data.assets.findIndex((asset) => asset.id === parseInt(id));
-	console.log(index);
-
-	if (index !== -1) {
-		data.assets.splice(index, 1);
-	}
-
 	try {
-		fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
+		await deleteAssetService(id);
 		return res.json({ message: "ok" });
 	} catch (err) {
 		res.status(500).json({ message: "error while saving asset" });
+	}
+}
+
+export async function getAssetById(req: Request, res: Response) {
+	const { id } = req.params;
+
+	if (!id) {
+		return res.status(400).json({ message: "missing key ['id']" });
+	}
+
+	try {
+		const asset = await getAssetByIdService(id);
+		return res.json(asset);
+	} catch (err) {
+		res.status(404).json({ message: "no asset found" });
 	}
 }

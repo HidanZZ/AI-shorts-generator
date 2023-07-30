@@ -154,7 +154,7 @@ export default function Generate() {
 							sx={{
 								mx: 2,
 							}}
-							disabled={!completed}
+							// disabled={!completed}
 							variant='contained'
 							color='primary'
 							onClick={handleSubmit((data) => {

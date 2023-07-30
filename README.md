@@ -49,12 +49,28 @@ The backend requires a Linux environment due to certain C++ dependencies. For Wi
    sudo apt update
    sudo apt install redis-server ffmpeg
    ```
-3. Download and set up the required AI model.
+3. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
+
+```bash
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+
+sudo dpkg -i google-chrome-stable_current_amd64.deb
+
+sudo rm google-chrome-stable_current_amd64.deb
+```
+
+If you face any dependency issues, you can resolve them by running:
+
+```bash
+sudo apt-get install -f
+```
+
+4. Download and set up the required AI model.
    ```bash
    chmod +x models/download-models.sh
-   ./models/download-models.sh
+   ./models/download-models.sh medium.en
    ```
-4. Install the necessary Node.js dependencies.
+5. Install the necessary Node.js dependencies.
    ```bash
    npm install
    ```

@@ -1,10 +1,28 @@
-import puppeteer from 'puppeteer-core';
+import puppeteer from "puppeteer-core";
+import { executablePath } from "puppeteer-core";
+import asyncShell from ".";
 
-export async function takeScreenshotOfHTML(
-  text: any,
-  outputPath: any
-) {
-  const htmlCode = `
+const checkChromiumInstallation = async () => {
+	try {
+		await asyncShell("chromium --version");
+		return true;
+	} catch (error) {
+		console.error("Chromium is not installed.");
+		return false;
+	}
+};
+
+const installChromium = async () => {
+	try {
+		const stdout = await asyncShell("sudo apt install -y chromium-browser");
+		console.log("Chromium installation stdout:", stdout);
+	} catch (error) {
+		console.error("Chromium installation failed.", error);
+	}
+};
+
+export async function redditQuestionImage(text: any, outputPath: any) {
+	const htmlCode = `
   <body class="Post">
   <style>
   
@@ -258,34 +276,35 @@ export async function takeScreenshotOfHTML(
   </body>
   
   `;
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.setContent(htmlCode);
-  let elementSelector = 'article';
-  // Modify the viewport size if needed
-  await page.setViewport({ width: 800, height: 600 });
 
-  const elementHandle = await page.$(elementSelector);
-  if (!elementHandle) {
-    console.error(
-      `Element with selector '${elementSelector}' not found.`
-    );
-    await browser.close();
-    return;
-  }
+	const browser = await puppeteer.launch({
+		executablePath: executablePath("chrome"),
+	});
+	const page = await browser.newPage();
+	await page.setContent(htmlCode);
+	let elementSelector = "article";
+	// Modify the viewport size if needed
+	await page.setViewport({ width: 800, height: 600 });
 
-  const boundingBox = await elementHandle.boundingBox();
-  if (!boundingBox) {
-    console.error('Bounding box of the element is not available.');
-    await browser.close();
-    return;
-  }
+	const elementHandle = await page.$(elementSelector);
+	if (!elementHandle) {
+		console.error(`Element with selector '${elementSelector}' not found.`);
+		await browser.close();
+		return;
+	}
 
-  let imageBuffer = await page.screenshot({
-    path: outputPath,
-    clip: boundingBox,
-  });
+	const boundingBox = await elementHandle.boundingBox();
+	if (!boundingBox) {
+		console.error("Bounding box of the element is not available.");
+		await browser.close();
+		return;
+	}
 
-  await browser.close();
-  return imageBuffer.toString('base64');
+	let imageBuffer = await page.screenshot({
+		path: outputPath,
+		clip: boundingBox,
+	});
+
+	await browser.close();
+	return imageBuffer.toString("base64");
 }

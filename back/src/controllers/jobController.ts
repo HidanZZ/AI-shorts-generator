@@ -3,37 +3,138 @@ import Queue, { Job } from "bull";
 import { Request, Response } from "express";
 import { getAudio, getAudioTransciption } from "../lib/steps";
 import fs from "fs";
-import { convertMp3ToWav, improveTranscription } from "../utils";
+import os from "os";
+import path from "path";
+import {
+	adjustTranscriptionTimes,
+	convertMp3ToWav,
+	cropVideoToVertical,
+	downloadYoutubeVideo,
+	getDuration,
+	getVideoDimensions,
+	improveTranscription,
+} from "../utils";
+import { getAssetByIdService } from "../services/assetsService";
+import { redditQuestionImage } from "../utils/image";
+import {
+	addAudioToVideo,
+	combineAudios,
+	insertImageInVideo,
+	writeTranscriptionOnVideo,
+} from "../utils/videoUtils";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 const logProgress = (job: Job, message: string, progress: number) => {
 	job.progress({ message, progress }); // report progress
 };
+
 videoProcessingQueue.process(async (job, done) => {
 	const { redditAnswer, redditQuestion, voice, video } = job.data;
 
 	try {
-		const tempQuestionAudio = "/tmp/big-speech.mp3";
+		let currentProgress = 0;
+		// const tempQuestionAudio = "/tmp/audio-1690725014554.mp3";
+		// const tempAnswerAudio = "/tmp/big-speech.mp3";
+		const customLogger = (message: string) => {
+			logProgress(job, message, currentProgress);
+		};
 		// Step 1: Generate audio from text
-		logProgress(job, "Generating question audio from text", 0);
-		// const tempQuestionAudio = await getAudio(redditQuestion, voice);
+		logProgress(job, "Generating question audio from text", currentProgress);
+		const tempQuestionAudio = await getAudio(redditQuestion, voice);
+		const tempAnswerAudio = await getAudio(redditAnswer, voice);
 
-		const tempQuestionAudioWav = await convertMp3ToWav(tempQuestionAudio);
-		// const tempQuestionAudioWav = "/tmp/audio-1690712781816-temp.wav";
-		console.log("tempQuestionAudio", tempQuestionAudioWav);
+		// Step 2: Convert audio to wav
+		// logProgress(job, "Converting audio to wav", 0.5);
+		const tempAnswerAudioWav = await convertMp3ToWav(tempAnswerAudio);
+
+		// Step 3: Get transcription
 		logProgress(job, "Getting transcription", 0.5);
-		const tempQuestionTranscription = await getAudioTransciption(
-			tempQuestionAudioWav
+
+		const tempAnswerTranscription = await getAudioTransciption(
+			tempAnswerAudioWav
 		);
-		console.log("tempQuestionTranscription", tempQuestionTranscription);
-		logProgress(job, "Combining transcriptions", 0.5);
-		const newTempQuestionTranscription = improveTranscription(
-			tempQuestionTranscription,
-			redditQuestion
+
+		//save transcription to file
+
+		// Step 4: Improve transcription
+		// logProgress(job, "Combining transcriptions", 0.5);
+
+		const improvedAnswerTranscription = improveTranscription(
+			tempAnswerTranscription,
+			redditAnswer
 		);
-		console.log("newTempQuestionTranscription", newTempQuestionTranscription);
-		// logProgress(job, "Generating answer audio from text", 0.5);
-		// const tempAnswerAudio = await getAudio(redditAnswer, voice);
+		//save transcription to file
+		// const tempAnswerTranscriptionPath = path.join(
+		// 	os.tmpdir(),
+		// 	"answer-transcription.json"
+		// );
+		// //read transcription from file
+		// const improvedAnswerTranscription_text = fs.readFileSync(
+		// 	tempAnswerTranscriptionPath,
+		// 	"utf8"
+		// );
+
+		// const improvedAnswerTranscription = JSON.parse(
+		// 	improvedAnswerTranscription_text
+		// );
+
+		// Step 5: Get question image
+		logProgress(job, "Getting question image", 1);
+		const questionImagePath = path.join(os.tmpdir(), "question-image.png");
+		await redditQuestionImage(redditQuestion, questionImagePath);
+
+		// Step 6: combine audios
+		logProgress(job, "Combining audios", 0.5);
+		const momentOfSilence = 1;
+		const combinedAudioPath = await combineAudios(
+			tempQuestionAudio,
+			tempAnswerAudio,
+			momentOfSilence
+		);
+		const questionAudioDuration = await getDuration(tempQuestionAudio);
+		const answerAudioStart = questionAudioDuration
+			? questionAudioDuration + momentOfSilence
+			: 0;
+
+		const pushedTranscriptions = adjustTranscriptionTimes(
+			improvedAnswerTranscription,
+			answerAudioStart
+		);
+		// Step 7: Prepare background video
+		// logProgress(job, "Preparing background video", 0.5);
+		currentProgress = 10;
+		logProgress(job, "Preparing background video", currentProgress);
+		//getting video url
+		const { url } = await getAssetByIdService(video);
+		currentProgress = 20;
+		logProgress(job, "Downloading video", currentProgress);
+		// download video
+		const videoPath = await downloadYoutubeVideo(url, customLogger);
+		currentProgress = 30;
+		logProgress(job, "Cropping video", currentProgress);
+		const audioDuration = await getDuration(combinedAudioPath);
+		//crop video to vertical
+		await cropVideoToVertical(videoPath, audioDuration, customLogger);
+		console.log("audioDuration", audioDuration);
+		currentProgress = 40;
+		await insertImageInVideo(
+			videoPath,
+			questionImagePath,
+			0,
+			questionAudioDuration,
+			customLogger
+		);
+		currentProgress = 50;
+		logProgress(job, "Adding audio to video", currentProgress);
+		await addAudioToVideo(videoPath, combinedAudioPath, customLogger);
+		currentProgress = 60;
+		logProgress(job, "Writing transcription on video", currentProgress);
+		await writeTranscriptionOnVideo(
+			videoPath,
+			pushedTranscriptions,
+			customLogger
+		);
+		currentProgress = 70;
 
 		logProgress(job, "Generating video", 100);
 		done(null, { message: "Video processed" });

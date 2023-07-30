@@ -1,4 +1,18 @@
 import ffmpeg from "fluent-ffmpeg";
+import fs from "fs";
+import ytdl from "ytdl-core";
+import shell from "shelljs";
+import stream from "stream";
+export interface IShellOptions {
+	silent: boolean; // true: won't print to console
+	async: boolean;
+}
+
+// default passed to shelljs exec
+const defaultShellOptions = {
+	silent: true, // true: won't print to console
+	async: false,
+};
 export function convertMp3ToWav(sourceFile: string) {
 	const targetFile = sourceFile.replace(".mp3", "-temp.wav");
 	return new Promise<string>((resolve, reject) => {
@@ -17,6 +31,14 @@ export function convertMp3ToWav(sourceFile: string) {
 			.run();
 	});
 }
+export async function getTotalFrames(videoPath: string): Promise<any> {
+	return new Promise((resolve, reject) => {
+		ffmpeg.ffprobe(videoPath, (err, data) => {
+			if (err) reject(err);
+			else resolve(data.streams[0].nb_frames);
+		});
+	});
+}
 
 export type Transcription = {
 	start: string;
@@ -27,32 +49,199 @@ export type Transcription = {
 export function improveTranscription(
 	transcriptions: Transcription[],
 	originalText: string
-): Transcription[] {
-	let originalTextWords = originalText.split(" ");
-	let improvedTranscriptions: Transcription[] = [];
-	let transcriptionIndex = 0;
-	for (let word of originalTextWords) {
-		let currentTranscriptionWord =
-			transcriptions[transcriptionIndex].speech.trim();
-		if (word.includes(currentTranscriptionWord)) {
-			transcriptions[transcriptionIndex].speech = word;
-			improvedTranscriptions.push(transcriptions[transcriptionIndex]);
-			transcriptionIndex++;
+) {
+	// Lowercase the original text and standardize the apostrophes for case-insensitive comparison
+	originalText = originalText.toLowerCase().replace("’", "'");
+
+	// Remove empty speech segments and punctuation
+	var refinedTranscriptions = transcriptions.filter(
+		(t) => t.speech.trim() && ![",", ".", "!", "?"].includes(t.speech.trim())
+	);
+
+	// Combine adjacent speech segments that form a single word in the original text
+	var i = 0;
+	while (i < refinedTranscriptions.length - 1) {
+		var currentSpeech = refinedTranscriptions[i].speech.trim().toLowerCase();
+		var nextSpeech = refinedTranscriptions[i + 1].speech.trim().toLowerCase();
+
+		// Directly combine the current speech and the next speech
+		var combinedSpeech = currentSpeech + nextSpeech;
+		if (originalText.includes(combinedSpeech)) {
+			refinedTranscriptions[i].speech = currentSpeech + nextSpeech.trimStart();
+			refinedTranscriptions[i].end = refinedTranscriptions[i + 1].end;
+			refinedTranscriptions.splice(i + 1, 1); // Remove the next item
 		} else {
-			let parts = word.split(currentTranscriptionWord);
-			transcriptions[transcriptionIndex].speech = parts[0];
-			improvedTranscriptions.push(transcriptions[transcriptionIndex]);
-			let secondPartTranscription: Transcription = {
-				...transcriptions[transcriptionIndex],
-			};
-			secondPartTranscription.speech = parts[1];
-			improvedTranscriptions.push(secondPartTranscription);
-			transcriptionIndex++;
+			i += 1;
 		}
 	}
-	//remove object in array that have undefined speech
-	improvedTranscriptions = improvedTranscriptions.filter(
-		(transcription) => transcription.speech !== undefined
-	);
-	return improvedTranscriptions;
+
+	return refinedTranscriptions;
+}
+export function adjustTranscriptionTimes(
+	transcriptions: Transcription[],
+	timeAdjustment: number
+): Transcription[] {
+	return transcriptions.map((transcript) => {
+		return {
+			start: toTimeString(toSeconds(transcript.start) + timeAdjustment),
+			end: toTimeString(toSeconds(transcript.end) + timeAdjustment),
+			speech: transcript.speech,
+		};
+	});
+}
+export function toSeconds(time: string): number {
+	const [hours, minutes, seconds] = time.split(":").map(parseFloat);
+	return hours * 3600 + minutes * 60 + seconds;
+}
+
+export function toTimeString(seconds: number): string {
+	let hours = Math.floor(seconds / 3600);
+	let minutes = Math.floor((seconds % 3600) / 60);
+	let secondsFraction = seconds % 60;
+	return `${hours.toString().padStart(2, "0")}:${minutes
+		.toString()
+		.padStart(2, "0")}:${secondsFraction.toFixed(3).padStart(6, "0")}`;
+}
+
+export async function downloadYoutubeVideo(
+	url: string,
+	log: any
+): Promise<string> {
+	const videoInfo = await ytdl.getInfo(url);
+	const videoFormat = ytdl.chooseFormat(videoInfo.formats, {
+		quality: "highestvideo",
+	});
+	const videoPath = `/tmp/video-${Date.now()}.mp4`;
+	return new Promise((resolve, reject) => {
+		ytdl(url, { format: videoFormat })
+			.on("finish", () => {
+				resolve(videoPath);
+			})
+			.on("error", (err) => {
+				reject(err);
+			})
+			.on("progress", (chunkLength, downloaded, total) => {
+				const downloadedMB = (downloaded / 1024 / 1024).toFixed(2);
+				const totalMB = (total / 1024 / 1024).toFixed(2);
+				const percent = downloaded / total;
+
+				log(
+					`Downloading video: ${Math.floor(
+						percent * 100
+					)}% (${downloadedMB}MB / ${totalMB}MB)`
+				);
+			})
+			.pipe(fs.createWriteStream(videoPath));
+	});
+}
+// export async function downloadYoutubeVideo(
+// 	url: string,
+// 	log: any
+// ): Promise<string> {
+// 	const videoInfo = await ytdl.getInfo(url);
+// 	const videoFormat = ytdl.chooseFormat(videoInfo.formats, {
+// 		quality: "highestvideo",
+// 	});
+// 	const videoPath = `/tmp/video-${Date.now()}.mp4`;
+// 	const videoStream = ytdl(url, { format: videoFormat });
+
+// 	return new Promise((resolve, reject) => {
+// 		const writableStream = new stream.Writable();
+// 		writableStream._write = (chunk, encoding, done) => {
+// 			// Do nothing
+// 			done();
+// 		};
+
+// 		ffmpeg(videoStream)
+// 			.inputOption("-report")
+// 			.format("mp4")
+// 			.setDuration(2 * 60) // Set duration here
+// 			// .output(fs.createWriteStream(videoPath))
+// 			.on("end", function () {
+// 				resolve(videoPath);
+// 			})
+// 			.on("error", function (err) {
+// 				reject(err);
+// 			})
+// 			.on("progress", (progress) => {
+// 				log(`Downloading video: ${progress.percent}%`);
+// 			})
+// 			.save(videoPath);
+// 	});
+// }
+export async function cropVideoToVertical(
+	videoPath: string,
+	endTime: number | undefined,
+	log: any
+): Promise<void> {
+	const tmpPath = videoPath + ".tmp.mp4";
+	const totalFrames = await getTotalFrames(videoPath);
+
+	return new Promise((resolve, reject) => {
+		ffmpeg(videoPath)
+			.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
+			.outputOptions("-to", `${endTime}`) // Trim to endTime
+			.save(tmpPath)
+			.on("end", () => {
+				fs.rename(tmpPath, videoPath, (err) => {
+					if (err) reject(err);
+					else resolve();
+				});
+			})
+			.on("error", reject)
+			.on("progress", (progress) => {
+				log(`Cropping video: ${progress.frames} / ${totalFrames}`);
+			});
+	});
+}
+export async function getVideoDimensions(
+	videoPath: string
+): Promise<{ width: any; height: any }> {
+	return new Promise((resolve, reject) => {
+		ffmpeg.ffprobe(videoPath, (err, metadata) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve({
+					width: metadata.streams[0].width,
+					height: metadata.streams[0].height,
+				});
+			}
+		});
+	});
+}
+
+export async function getDuration(
+	assetPath: string
+): Promise<number | undefined> {
+	return new Promise((resolve, reject) => {
+		ffmpeg.ffprobe(assetPath, (err, metadata) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(metadata.format.duration);
+			}
+		});
+	});
+}
+
+export default async function asyncShell(
+	command: string,
+	options: IShellOptions = defaultShellOptions
+): Promise<any> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			// docs: https://github.com/shelljs/shelljs#execcommand--options--callback
+			shell.exec(
+				command,
+				options,
+				(code: number, stdout: string, stderr: string) => {
+					if (code === 0) resolve(stdout);
+					else reject(stderr);
+				}
+			);
+		} catch (error) {
+			reject(error);
+		}
+	});
 }
