@@ -13,6 +13,7 @@ import {
 	getDuration,
 	getVideoDimensions,
 	improveTranscription,
+	parseVtt,
 } from "../utils";
 import { getAssetByIdService } from "../services/assetsService";
 import { redditQuestionImage } from "../utils/image";
@@ -22,6 +23,7 @@ import {
 	insertImageInVideo,
 	writeTranscriptionOnVideo,
 } from "../utils/videoUtils";
+import { textToSpeech } from "../utils/audio";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 const logProgress = (job: Job, message: string, progress: number) => {
@@ -39,44 +41,33 @@ videoProcessingQueue.process(async (job, done) => {
 			logProgress(job, message, currentProgress);
 		};
 		// Step 1: Generate audio from text
-		logProgress(job, "Generating question audio from text", currentProgress);
-		const tempQuestionAudio = await getAudio(redditQuestion, voice);
-		const tempAnswerAudio = await getAudio(redditAnswer, voice);
+		// logProgress(job, "Generating question audio from text", currentProgress);
+		// const tempQuestionAudio = await getAudio(redditQuestion, voice);
+		// const tempAnswerAudio = await getAudio(redditAnswer, voice);
+		// // Step 2: Convert audio to wav
+		// const tempAnswerAudioWav = await convertMp3ToWav(tempAnswerAudio);
+		// // Step 3: Get transcription
+		// logProgress(job, "Getting transcription", 0.5);
+		// const tempAnswerTranscription = await getAudioTransciption(
+		// 	tempAnswerAudioWav
+		// );
+		// // Step 4: Improve transcription
+		// const improvedAnswerTranscription = improveTranscription(
+		// 	tempAnswerTranscription,
+		// 	redditAnswer
+		// );
 
-		// Step 2: Convert audio to wav
-		// logProgress(job, "Converting audio to wav", 0.5);
-		const tempAnswerAudioWav = await convertMp3ToWav(tempAnswerAudio);
-
-		// Step 3: Get transcription
-		logProgress(job, "Getting transcription", 0.5);
-
-		const tempAnswerTranscription = await getAudioTransciption(
-			tempAnswerAudioWav
+		const { audio: tempAnswerAudio, subtitles } = await textToSpeech(
+			redditAnswer,
+			"temp-answer",
+			voice
 		);
-
-		//save transcription to file
-
-		// Step 4: Improve transcription
-		// logProgress(job, "Combining transcriptions", 0.5);
-
-		const improvedAnswerTranscription = improveTranscription(
-			tempAnswerTranscription,
-			redditAnswer
+		const { audio: tempQuestionAudio } = await textToSpeech(
+			redditQuestion,
+			"temp-question",
+			voice
 		);
-		//save transcription to file
-		// const tempAnswerTranscriptionPath = path.join(
-		// 	os.tmpdir(),
-		// 	"answer-transcription.json"
-		// );
-		// //read transcription from file
-		// const improvedAnswerTranscription_text = fs.readFileSync(
-		// 	tempAnswerTranscriptionPath,
-		// 	"utf8"
-		// );
-
-		// const improvedAnswerTranscription = JSON.parse(
-		// 	improvedAnswerTranscription_text
-		// );
+		const improvedAnswerTranscription = parseVtt(subtitles);
 
 		// Step 5: Get question image
 		logProgress(job, "Getting question image", 1);

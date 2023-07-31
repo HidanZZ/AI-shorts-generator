@@ -102,6 +102,50 @@ export function toTimeString(seconds: number): string {
 		.toString()
 		.padStart(2, "0")}:${secondsFraction.toFixed(3).padStart(6, "0")}`;
 }
+export function parseVtt(filePath: string): Transcription[] {
+	// Read the content of the file
+	const content = fs.readFileSync(filePath, "utf8");
+
+	// Split the content by newline characters to get each line
+	const lines = content.split("\n");
+
+	// Initialize an empty array to store the parsed data
+	let parsedData = [];
+
+	// Loop through each line
+	for (let i = 0; i < lines.length; i++) {
+		// Ignore the header line and empty lines
+		if (lines[i] === "WEBVTT" || lines[i] === "") {
+			continue;
+		}
+
+		// If a line contains " --> ", it's a time line
+		if (lines[i].includes(" --> ")) {
+			// Get the time and text
+			let time = lines[i].replace("\r", ""); // Remove \r
+			let text = lines[i + 1] ? lines[i + 1].replace("\r", "") : ""; // Remove \r
+
+			// Split the time by " --> " to get start and end time separately
+			let [start, end] = time.split(" --> ");
+
+			// Store the start time, end time, and text in an object
+			let data: Transcription = {
+				start: start,
+				end: end,
+				speech: text,
+			};
+
+			// Append the object to the array
+			parsedData.push(data);
+
+			// Skip the next line because it's the text that we already processed
+			i++;
+		}
+	}
+
+	// Return the parsed data
+	return parsedData;
+}
 
 export async function downloadYoutubeVideo(
 	url: string,
