@@ -2,10 +2,8 @@
 import { Request, Response } from "express";
 import {
 	apiKeysPath,
-	assetsPath,
 	checkApiKeyExists,
 	checkAssetsExists,
-	isUrlYoutube,
 } from "../utils/dataFileUtils";
 import fs from "fs";
 import { AssetFile } from "../types/data";
@@ -14,6 +12,7 @@ import {
 	deleteAssetService,
 	getAssetByIdService,
 } from "../services/assetsService";
+import { isUrlYoutube } from "../utils";
 export async function getApiKey(req: Request, res: Response) {
 	const elevenLabsApiKey = checkApiKeyExists();
 	if (elevenLabsApiKey) {

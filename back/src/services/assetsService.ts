@@ -1,10 +1,4 @@
-import {
-	apiKeysPath,
-	assetsPath,
-	checkApiKeyExists,
-	checkAssetsExists,
-	isUrlYoutube,
-} from "../utils/dataFileUtils";
+import { assetsPath, checkAssetsExists } from "../utils/dataFileUtils";
 import fs from "fs";
 import { Asset, AssetFile } from "../types/data";
 

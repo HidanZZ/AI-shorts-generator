@@ -1,6 +1,6 @@
 // 🖥️ Frontend Engineer
 import { useEffect, useState } from "react";
-import { Card, Typography } from "@mui/material";
+import { Button, Card, Typography } from "@mui/material";
 import LinearProgressWithLabel from "./LinearProgressWithLabel";
 
 function JobStatus({
@@ -14,6 +14,7 @@ function JobStatus({
 		status: "Unknown",
 		progress: 0,
 	});
+	const [videoUrl, setVideoUrl] = useState("");
 
 	useEffect(() => {
 		if (!jobId || jobId === "") return;
@@ -34,6 +35,7 @@ function JobStatus({
 			if (data.isFinished) {
 				eventSource.close();
 				setCompleted(true);
+				setVideoUrl(data.videoUrl);
 			}
 		});
 
@@ -53,6 +55,21 @@ function JobStatus({
 			<Typography variant='h6'>Job Status</Typography>
 			<Typography variant='body1'>Status: {jobStatus.status}</Typography>
 			<LinearProgressWithLabel value={jobStatus.progress} />
+
+			{
+				//download button
+				videoUrl !== "" && (
+					<Button
+						variant='contained'
+						color='primary'
+						onClick={() => {
+							window.open(videoUrl);
+						}}
+					>
+						Download
+					</Button>
+				)
+			}
 		</Card>
 	);
 }

@@ -10,8 +10,6 @@ export const textToSpeech = async (
 	const tempAudioPath = path.join(os.tmpdir(), `${output_file}.mp3`);
 	const tempSubtitlesPath = path.join(os.tmpdir(), `${output_file}.vtt`);
 	const command = `edge-tts --voice en-US-ChristopherNeural  --text "${text}" --write-media ${tempAudioPath} --words-in-cue 1 --write-subtitles ${tempSubtitlesPath} --rate "+5%"`;
-	console.log(command);
-
 	await asyncShell(command);
 	return {
 		audio: tempAudioPath,

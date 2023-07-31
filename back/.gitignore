@@ -1,3 +1,4 @@
 /node_modules
 /models/*
 !models/download-models.sh
+public/*

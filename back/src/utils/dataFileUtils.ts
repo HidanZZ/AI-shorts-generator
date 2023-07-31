@@ -23,8 +23,3 @@ export const checkAssetsExists = () => {
 		return false;
 	}
 };
-
-export const isUrlYoutube = (url: string) => {
-	const regex = /^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
-	return regex.test(url);
-};

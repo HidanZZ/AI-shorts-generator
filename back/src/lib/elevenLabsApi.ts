@@ -23,7 +23,7 @@ export async function getVoices(apiKey: string) {
 	}
 }
 
-export async function textToSpeech(
+export async function elevenlabsText2Speech(
 	apiKey: string,
 	text: string,
 	voiceId: string
