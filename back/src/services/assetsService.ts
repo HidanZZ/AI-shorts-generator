@@ -56,3 +56,21 @@ export async function getAssetByIdService(id: string): Promise<Asset> {
 		throw new Error("no assets found");
 	}
 }
+
+export async function updateAsset(video: Asset) {
+	const assets = checkAssetsExists();
+
+	if (assets) {
+		const index = assets.assets.findIndex(
+			(asset: Asset) => asset.id === video.id
+		);
+		if (index !== -1) {
+			assets.assets[index] = video;
+			fs.writeFileSync(assetsPath, JSON.stringify(assets), "utf8");
+		} else {
+			throw new Error("no asset found");
+		}
+	} else {
+		throw new Error("no assets found");
+	}
+}

@@ -4,6 +4,10 @@ import ytdl from "ytdl-core";
 import shell from "shelljs";
 import stream from "stream";
 import { Transcription } from "../lib/VideoProcessor";
+import path from "path";
+import os from "os";
+import { getAssetByIdService, updateAsset } from "../services/assetsService";
+import { Asset } from "../types/data";
 export interface IShellOptions {
 	silent: boolean; // true: won't print to console
 	async: boolean;
@@ -80,19 +84,42 @@ export function parseVtt(filePath: string | undefined): Transcription[] {
 	return parsedData;
 }
 
+export async function checkVideoExists(videoId: string, logger: any) {
+	const video = await getAssetByIdService(videoId);
+	if (!video) {
+		throw new Error("Video not found");
+	}
+	if (video.downloadedPath) {
+		return video.downloadedPath;
+	}
+
+	return downloadYoutubeVideo(video, logger);
+}
+
 export async function downloadYoutubeVideo(
-	url: string,
+	video: Asset,
 	log: any
 ): Promise<string> {
+	const url = video.url;
 	const videoInfo = await ytdl.getInfo(url);
 	const videoFormat = ytdl.chooseFormat(videoInfo.formats, {
 		quality: "highestvideo",
 	});
-	const videoPath = `/tmp/video-${Date.now()}.mp4`;
+	const downloadedVideosFolder = path.join(os.homedir(), "videos");
+	//check if folder exists
+	if (!fs.existsSync(downloadedVideosFolder)) {
+		fs.mkdirSync(downloadedVideosFolder);
+	}
+	const videoPath = path.join(
+		downloadedVideosFolder,
+		`${videoInfo.videoDetails.videoId}.${videoFormat.container}`
+	);
 	return new Promise((resolve, reject) => {
 		ytdl(url, { format: videoFormat })
-			.on("finish", () => {
-				resolve(videoPath);
+			.on("finish", async () => {
+				video.downloadedPath = videoPath;
+				await updateAsset(video);
+				resolve(video.downloadedPath);
 			})
 			.on("error", (err) => {
 				reject(err);

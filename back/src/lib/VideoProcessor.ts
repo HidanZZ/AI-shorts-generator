@@ -71,7 +71,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 			whisperOptions: {
 				splitOnWord: true,
 				wordTimestamps: false,
-				timestamps_length: 10,
+				timestamps_length: 7,
 				outputInVtt: true,
 			},
 		};

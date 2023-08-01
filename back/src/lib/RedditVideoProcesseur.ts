@@ -2,8 +2,9 @@ import { DoneCallback, Job } from "bull";
 import { Transcription, VideoProcessor } from "./VideoProcessor";
 import path from "path";
 import os from "os";
+import fs from "fs";
 import { redditQuestionImage } from "../utils/image";
-import { downloadYoutubeVideo, parseVtt } from "../utils";
+import { checkVideoExists, downloadYoutubeVideo, parseVtt } from "../utils";
 import { getAssetByIdService } from "../services/assetsService";
 
 export class RedditVideoProcessor extends VideoProcessor {
@@ -31,14 +32,11 @@ export class RedditVideoProcessor extends VideoProcessor {
 		this.logger("Generating question audio from text");
 		const { audio: tempQuestionAudio } = await this.audioStrategy.generateAudio(
 			this.redditQuestion,
-			this.voice
+			this.voice,
+			false
 		);
 		const { audio: tempAnswerAudio, subtitles } =
-			await this.audioStrategy.generateAudio(
-				this.redditAnswer,
-				this.voice,
-				false
-			);
+			await this.audioStrategy.generateAudio(this.redditAnswer, this.voice);
 		// Step 2: getting transcription
 		this.currentProgress = 10;
 		this.logger("Getting transcription");
@@ -76,11 +74,13 @@ export class RedditVideoProcessor extends VideoProcessor {
 		// Step 6: Prepare background video
 		this.currentProgress = 40;
 		this.logger("Preparing background video");
-		const { url } = await getAssetByIdService(this.video);
+		const downloadedVidPath = await checkVideoExists(this.video, this.logger);
 		// step 7: download video
 		this.currentProgress = 50;
-		this.logger("Downloading video");
-		const videoPath = await downloadYoutubeVideo(url, this.logger);
+		//copy video to tmp folder
+		const now = Date.now();
+		const videoPath = path.join(os.tmpdir(), `${now}.mp4`);
+		fs.copyFileSync(downloadedVidPath, videoPath);
 		//step 8: crop video to vertical
 		this.currentProgress = 60;
 		this.logger("Cropping video");
