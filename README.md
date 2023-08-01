@@ -49,7 +49,11 @@ The backend requires a Linux environment due to certain C++ dependencies. For Wi
    sudo apt update
    sudo apt install redis-server ffmpeg
    ```
-3. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
+3. Install edge-tts dependencies. you will need to have python and pip installed. Here's a simple command for Ubuntu.
+   ```bash
+   pip install edge-tts
+   ```
+4. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
 
 ```bash
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -65,15 +69,15 @@ If you face any dependency issues, you can resolve them by running:
 sudo apt-get install -f
 ```
 
-4. Download and set up the required AI model.
-   ```bash
-   chmod +x models/download-models.sh
-   ./models/download-models.sh medium.en
-   ```
 5. Install the necessary Node.js dependencies.
    ```bash
    npm install
    ```
+6. Download and set up the required AI model.
+   ```bash
+   npx nodejs-whisper download
+   ```
+   when prompted for a model, enter `small.en`
 
 ### Running Redis
 
@@ -82,10 +86,6 @@ After installing Redis, run it by executing the following command:
 ```bash
 sudo service redis-server start
 ```
-
-### Setting Up Environment Variables
-
-Modify the `MODEL_PATH` in the `.env` file to match the path of the downloaded AI model.
 
 ### Running the Backend
 
