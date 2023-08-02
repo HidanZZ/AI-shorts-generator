@@ -36,12 +36,14 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	protected video: string;
 	protected currentProgress: number = 0;
 	protected audioStrategy: IAudioStrategy | undefined;
+	protected useRandomVideoTime: boolean = false;
 
 	constructor(job: Job<any>, done: DoneCallback) {
-		const { voice, video } = job.data;
+		const { voice, video, useRandomVideoTime } = job.data;
 		this.job = job;
 		this.voice = voice;
 		this.video = video;
+		this.useRandomVideoTime = useRandomVideoTime ?? false;
 		this.done = done;
 	}
 
@@ -157,17 +159,77 @@ export abstract class VideoProcessor implements IAudioGenerator {
 			});
 		});
 	}
+	protected async getRandomeVideoStartTime(
+		videoPath: string,
+		audioDuration: number | undefined
+	): Promise<number> {
+		if (!audioDuration) {
+			throw new Error("audio duration is undefined");
+		}
+		const videoDuration = await this.getDuration(videoPath);
+		if (!videoDuration) {
+			throw new Error("video duration is undefined");
+		}
+		const maxStartTime = videoDuration - audioDuration;
+		const randomStartTime = Math.floor(Math.random() * maxStartTime);
+		return randomStartTime;
+	}
+	// protected async cropVideoToVertical(
+	// 	videoPath: string,
+	// 	endTime: number | undefined
+	// ): Promise<void> {
+	// 	const tmpPath = videoPath + ".tmp.mp4";
+	// 	const totalFrames = await this.getTotalFrames(videoPath);
+
+	// 	return new Promise((resolve, reject) => {
+	// 		ffmpeg(videoPath)
+	// 			.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
+	// 			.outputOptions("-to", `${endTime}`) // Trim to endTime
+	// 			.save(tmpPath)
+	// 			.on("end", () => {
+	// 				fs.rename(tmpPath, videoPath, (err) => {
+	// 					if (err) reject(err);
+	// 					else resolve();
+	// 				});
+	// 			})
+	// 			.on("error", reject)
+	// 			.on("progress", (progress) => {
+	// 				this.logger(`Cropping video: ${progress.frames} / ${totalFrames}`);
+	// 			});
+	// 	});
+	// }
 	protected async cropVideoToVertical(
 		videoPath: string,
-		endTime: number | undefined
+		from: number,
+		duration: number | undefined
 	): Promise<void> {
+		if (!duration) {
+			throw new Error("duration is undefined");
+		}
 		const tmpPath = videoPath + ".tmp.mp4";
 		const totalFrames = await this.getTotalFrames(videoPath);
 
+		let videoDurationInSeconds = await this.getDuration(videoPath);
+		let startTime = from;
+
+		// If videoDurationInSeconds is undefined, assume a default value or stop function
+		if (videoDurationInSeconds === undefined) {
+			videoDurationInSeconds = 0; // Or handle this case as per your requirement
+		}
+
+		// If duration is undefined, assume it is the rest of the video
+
+		// Check if from + duration is more than video duration, if so, adjust start time
+		if (startTime + duration > videoDurationInSeconds) {
+			// Get a random start time that doesn't exceed the duration limit
+			startTime = Math.random() * (videoDurationInSeconds - duration);
+		}
+
 		return new Promise((resolve, reject) => {
 			ffmpeg(videoPath)
+				.setStartTime(startTime)
+				.setDuration(duration)
 				.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
-				.outputOptions("-to", `${endTime}`) // Trim to endTime
 				.save(tmpPath)
 				.on("end", () => {
 					fs.rename(tmpPath, videoPath, (err) => {
@@ -181,6 +243,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 				});
 		});
 	}
+
 	protected async getTotalFrames(videoPath: string): Promise<any> {
 		return new Promise((resolve, reject) => {
 			ffmpeg.ffprobe(videoPath, (err, data) => {
@@ -244,6 +307,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 				.save(tmpPath);
 		});
 	}
+
 	protected async getVideoDimensions(
 		videoPath: string
 	): Promise<{ width: any; height: any }> {
@@ -365,7 +429,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 						transcript.start
 					)},${toSeconds(transcript.end)})': text=' ${escapeSingleQuotes(
 						transcript.speech
-					)}':fontfile='${fontPath}':fontcolor='white': fontsize='h/12': x='(w-text_w)/2': y='(h-text_h)/2': borderw=5: shadowcolor=black: shadowx=8: shadowy=8`
+					)}':fontfile='${fontPath}':fontcolor='white': fontsize='h/20': x='(w-text_w)/2': y='(h-text_h)/2': borderw=5: shadowcolor=black: shadowx=8: shadowy=8`
 				);
 			});
 

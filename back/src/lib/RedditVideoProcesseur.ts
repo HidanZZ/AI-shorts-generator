@@ -86,7 +86,13 @@ export class RedditVideoProcessor extends VideoProcessor {
 		this.logger("Cropping video");
 		const audioDuration = await this.getDuration(combinedAudioPath);
 		console.log(" full audio duration", audioDuration);
-		await this.cropVideoToVertical(videoPath, audioDuration);
+		let from = 0;
+		if (this.useRandomVideoTime) {
+			from = await this.getRandomeVideoStartTime(videoPath, audioDuration);
+		}
+		console.log("froooooooom", from);
+
+		await this.cropVideoToVertical(videoPath, from, audioDuration);
 		return {
 			questionImagePath,
 			videoPath,

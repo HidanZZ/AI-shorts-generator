@@ -11,6 +11,7 @@ import {
 	Radio,
 	FormControlLabel,
 	Box,
+	Checkbox,
 } from "@mui/material";
 import React, { useEffect } from "react";
 import * as yup from "yup";
@@ -27,9 +28,10 @@ export default function Generate() {
 	const schema = yup.object().shape({
 		redditQuestion: yup.string().required(),
 		redditAnswer: yup.string().required(),
-		voice: yup.string().required(),
+		voice: yup.string().default(""),
 		video: yup.string().required(),
 		useElevenLabs: yup.boolean().required(),
+		useRandomVideoTime: yup.boolean().required().default(false),
 	});
 	const defaultValues = {
 		redditQuestion: "",
@@ -37,6 +39,7 @@ export default function Generate() {
 		voice: "",
 		video: "",
 		useElevenLabs: false,
+		useRandomVideoTime: false,
 	};
 
 	const {
@@ -44,6 +47,7 @@ export default function Generate() {
 		handleSubmit,
 		watch,
 		reset,
+		getValues,
 		formState: { errors },
 	} = useForm({
 		defaultValues,
@@ -51,7 +55,6 @@ export default function Generate() {
 		resolver: yupResolver(schema),
 	});
 	const onSubmit = (data: any) => {
-		console.log(data);
 		api.post("/generate", data).then((res) => {
 			setJobId(res.data.jobId);
 			setCompleted(false);
@@ -59,9 +62,6 @@ export default function Generate() {
 	};
 
 	const useElevenLabs = watch("useElevenLabs") as boolean;
-	useEffect(() => {
-		console.log("useElevenLabs", Boolean(useElevenLabs));
-	}, [useElevenLabs]);
 
 	return (
 		<Card>
@@ -234,6 +234,25 @@ export default function Generate() {
 								render={({ field }) => <BackgroundVidSelection {...field} />}
 							/>
 						</Card>
+					</Grid>
+					<Grid item xs={12}>
+						<Controller
+							name='useRandomVideoTime'
+							control={control}
+							render={({ field: { onChange, value } }) => (
+								<FormControlLabel
+									checked={value}
+									onChange={onChange}
+									control={<Checkbox />}
+									label={"Randomize Video Start Time"}
+									labelPlacement='start'
+									sx={{ ml: 2 }}
+								/>
+							)}
+						/>
+						{errors.useRandomVideoTime && (
+							<p>{errors.useRandomVideoTime.message}</p>
+						)}
 					</Grid>
 					<Grid item xs={12}>
 						<Button

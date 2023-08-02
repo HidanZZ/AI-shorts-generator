@@ -1,25 +1,5 @@
 import puppeteer from "puppeteer-core";
 import { executablePath } from "puppeteer-core";
-import asyncShell from ".";
-
-const checkChromiumInstallation = async () => {
-	try {
-		await asyncShell("chromium --version");
-		return true;
-	} catch (error) {
-		console.error("Chromium is not installed.");
-		return false;
-	}
-};
-
-const installChromium = async () => {
-	try {
-		const stdout = await asyncShell("sudo apt install -y chromium-browser");
-		console.log("Chromium installation stdout:", stdout);
-	} catch (error) {
-		console.error("Chromium installation failed.", error);
-	}
-};
 
 export async function redditQuestionImage(text: any, outputPath: any) {
 	const htmlCode = `
@@ -62,7 +42,6 @@ export async function redditQuestionImage(text: any, outputPath: any) {
             z-index: 1;
             padding: 10px 20px;
             border-radius: 25px;
-            /* border-radius: 20px; */
         }
     </style>
     <div class="blur-background"></div>
@@ -86,7 +65,7 @@ export async function redditQuestionImage(text: any, outputPath: any) {
 												font-size: 16px;
 												font-family: 'Simply Rounded', sans-serif;
 											"><img alt="u/callmevicious avatar" class="PostHeader__avatar"
-                                            src="https://static.vecteezy.com/system/resources/thumbnails/001/840/612/small/picture-profile-icon-male-icon-human-or-people-sign-and-symbol-free-vector.jpg"
+                                            src="https://icon-library.com/images/default-user-icon/default-user-icon-7.jpg"
                                             style="
 													background-color: #e3e3e2;
 													width: 40px;
@@ -195,16 +174,9 @@ export async function redditQuestionImage(text: any, outputPath: any) {
 		return;
 	}
 
-	const boundingBox = await elementHandle.boundingBox();
-	if (!boundingBox) {
-		console.error("Bounding box of the element is not available.");
-		await browser.close();
-		return;
-	}
-
-	let imageBuffer = await page.screenshot({
+	let imageBuffer = await elementHandle.screenshot({
 		path: outputPath,
-		clip: boundingBox,
+		omitBackground: true,
 	});
 
 	await browser.close();

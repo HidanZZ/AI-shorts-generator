@@ -6,9 +6,6 @@ import { EdgeTTSStrategy, ElevenLabsStrategy } from "../lib/AudioStrategies";
 
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
-const logProgress = (job: Job, message: string, progress: number) => {
-	job.progress({ message, progress }); // report progress
-};
 
 videoProcessingQueue.process(async (job, done) => {
 	// const videoProcessor = job.data.isReddit
@@ -23,11 +20,14 @@ videoProcessingQueue.process(async (job, done) => {
 });
 
 export async function startJob(req: Request, res: Response) {
-	const { redditQuestion, redditAnswer, voice, video, useElevenLabs } =
-		await req.body;
-	if (!redditAnswer) {
-		return res.status(400).json({ message: "missing key ['redditAnswer']" });
-	}
+	const {
+		redditQuestion,
+		redditAnswer,
+		voice,
+		video,
+		useElevenLabs,
+		useRandomVideoTime,
+	} = await req.body;
 
 	const job = await videoProcessingQueue.add({
 		redditAnswer,
@@ -35,6 +35,7 @@ export async function startJob(req: Request, res: Response) {
 		voice,
 		video,
 		useElevenLabs,
+		useRandomVideoTime,
 	});
 
 	return res.json({ jobId: job.id });

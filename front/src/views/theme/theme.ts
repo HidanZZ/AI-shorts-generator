@@ -78,7 +78,13 @@ const theme = createTheme({
 				},
 			},
 		},
-		//add black border to table
+		MuiCheckbox: {
+			styleOverrides: {
+				root: {
+					color: "#000000", // Black text
+				},
+			},
+		},
 		MuiTableCell: {
 			styleOverrides: {
 				root: {
