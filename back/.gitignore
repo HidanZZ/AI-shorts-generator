@@ -3,3 +3,4 @@
 !models/download-models.sh
 public/*
 dist
+!public/emptyfile
