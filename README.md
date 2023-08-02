@@ -53,7 +53,11 @@ The backend requires a Linux environment due to certain C++ dependencies. For Wi
    ```bash
    pip install edge-tts
    ```
-4. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
+4. install whisper for transcription. Here's a simple command for Ubuntu.
+   ```bash
+   pip3 install --upgrade --no-deps --force-reinstall git+https://github.com/linto-ai/whisper-timestamped
+   ```
+5. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
 
 ```bash
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -69,15 +73,10 @@ If you face any dependency issues, you can resolve them by running:
 sudo apt-get install -f
 ```
 
-5. Install the necessary Node.js dependencies.
+6. Install the necessary Node.js dependencies.
    ```bash
    npm install
    ```
-6. Download and set up the required AI model.
-   ```bash
-   npx nodejs-whisper download
-   ```
-   when prompted for a model, enter `small.en`
 
 ### Running Redis
 

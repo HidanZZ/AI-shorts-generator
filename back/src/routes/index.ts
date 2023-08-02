@@ -8,5 +8,8 @@ const router = Router();
 router.use("/", voiceRouter);
 router.use("/", settingsRouter);
 router.use("/", jobRouter);
+router.get("/", (req, res) => {
+	res.send("Hello World!");
+});
 
 export default router;

@@ -40,7 +40,14 @@ export class RedditVideoProcessor extends VideoProcessor {
 		// Step 2: getting transcription
 		this.currentProgress = 10;
 		this.logger("Getting transcription");
+		console.log("[audioProcessing] subtitles", subtitles);
+
 		const improvedAnswerTranscription = parseVtt(subtitles);
+		console.log(
+			"[audioProcessing] improvedAnswerTranscription",
+			improvedAnswerTranscription
+		);
+
 		// Step 5: combine audios
 		this.currentProgress = 20;
 		this.logger("Combining audios");

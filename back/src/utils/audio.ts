@@ -16,3 +16,16 @@ export const textToSpeech = async (
 		subtitles: tempSubtitlesPath,
 	};
 };
+
+export async function whisperTranscribe(audioPath: string) {
+	const command = `whisper_timestamped ${audioPath} --model small.en -f vtt --output_dir ${path.dirname(
+		audioPath
+	)}`;
+	console.log("[whisperTranscribe] command", command);
+
+	await asyncShell(command);
+	const subtitlesPath = audioPath + ".words.vtt";
+	console.log("[whisperTranscribe] subtitlesPath", subtitlesPath);
+
+	return subtitlesPath;
+}

@@ -1,7 +1,6 @@
 import { checkApiKeyExists } from "../utils/dataFileUtils";
 import { elevenlabsText2Speech } from "./elevenLabsApi";
 import fs from "fs";
-import { IOptions, nodewhisper } from "nodejs-whisper";
 import os from "os";
 import path from "path";
 import asyncShell, {
@@ -14,6 +13,7 @@ import { DoneCallback, Job } from "bull";
 import { IAudioStrategy } from "./AudioStrategies";
 import { copyFile, unlink } from "fs/promises";
 import { port } from "..";
+import { whisperTranscribe } from "../utils/audio";
 const fontPath = path.join(__dirname, "../../fonts/font.otf");
 
 interface IAudioGenerator {
@@ -68,16 +68,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	}
 
 	public async getAudioTransciption(audioPath: string): Promise<string> {
-		const options: IOptions = {
-			modelName: "small.en",
-			whisperOptions: {
-				splitOnWord: true,
-				wordTimestamps: false,
-				timestamps_length: 7,
-				outputInVtt: true,
-			},
-		};
-		const transcription = await nodewhisper(audioPath, options);
+		const transcription = await whisperTranscribe(audioPath);
 		return transcription;
 	}
 	public async edgeTTS(

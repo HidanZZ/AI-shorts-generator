@@ -21,8 +21,11 @@ export class ElevenLabsStrategy implements IAudioStrategy {
 	async generateAudio(text: string, voice: string, subtitles: boolean = true) {
 		const audioPath = await this.videoProcessor.getAudio(text, voice);
 		if (subtitles) {
-			await this.videoProcessor.getAudioTransciption(audioPath);
-			const subtitlesPath = audioPath.replace(".mp3", ".wav.vtt");
+			const subtitlesPath = await this.videoProcessor.getAudioTransciption(
+				audioPath
+			);
+			console.log("[generateAudio] subtitlesPath", subtitlesPath);
+
 			return { audio: audioPath, subtitles: subtitlesPath };
 		} else {
 			return { audio: audioPath };

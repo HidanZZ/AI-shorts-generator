@@ -1,4 +1,3 @@
-import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import ytdl from "ytdl-core";
 import shell from "shelljs";
@@ -19,15 +18,15 @@ const defaultShellOptions = {
 	async: false,
 };
 
-export function toSeconds(time: string): number {
-	const [hours, minutes, seconds] = time.split(":").map(parseFloat);
-	return hours * 3600 + minutes * 60 + seconds;
-}
 export const isUrlYoutube = (url: string) => {
 	const regex = /^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
 	return regex.test(url);
 };
 
+export function toSeconds(time: string): number {
+	const [hours, minutes, seconds] = time.split(":").map(parseFloat);
+	return hours * 3600 + minutes * 60 + seconds;
+}
 export function toTimeString(seconds: number): string {
 	let hours = Math.floor(seconds / 3600);
 	let minutes = Math.floor((seconds % 3600) / 60);
@@ -36,51 +35,49 @@ export function toTimeString(seconds: number): string {
 		.toString()
 		.padStart(2, "0")}:${secondsFraction.toFixed(3).padStart(6, "0")}`;
 }
+// Helper function to convert mm:ss to HH:mm:ss
+function convertTimeFormat(time: string): string {
+	const segments = time.split(":");
+	if (segments.length === 3) {
+		// Already in HH:mm:ss format
+		return time;
+	}
+	// If in mm:ss format, add an hour segment
+	return "00:" + time;
+}
+
 export function parseVtt(filePath: string | undefined): Transcription[] {
-	// Read the content of the file
 	if (!filePath) {
 		throw new Error("no file path");
 	}
+
 	const content = fs.readFileSync(filePath, "utf8");
-
-	// Split the content by newline characters to get each line
 	const lines = content.split("\n");
-
-	// Initialize an empty array to store the parsed data
 	let parsedData = [];
 
-	// Loop through each line
 	for (let i = 0; i < lines.length; i++) {
-		// Ignore the header line and empty lines
 		if (lines[i] === "WEBVTT" || lines[i] === "") {
 			continue;
 		}
 
-		// If a line contains " --> ", it's a time line
 		if (lines[i].includes(" --> ")) {
-			// Get the time and text
-			let time = lines[i].replace("\r", ""); // Remove \r
-			let text = lines[i + 1] ? lines[i + 1].replace("\r", "") : ""; // Remove \r
+			let time = lines[i].replace("\r", "");
+			let text = lines[i + 1] ? lines[i + 1].replace("\r", "") : "";
 
-			// Split the time by " --> " to get start and end time separately
-			let [start, end] = time.split(" --> ");
+			// Use convertTimeFormat function here
+			let [start, end] = time.split(" --> ").map(convertTimeFormat);
 
-			// Store the start time, end time, and text in an object
 			let data: Transcription = {
 				start: start,
 				end: end,
 				speech: text,
 			};
 
-			// Append the object to the array
 			parsedData.push(data);
-
-			// Skip the next line because it's the text that we already processed
 			i++;
 		}
 	}
 
-	// Return the parsed data
 	return parsedData;
 }
 

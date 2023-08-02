@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as the base image
-FROM node:16
+FROM node:18
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -14,4 +14,5 @@ RUN npm install
 COPY . .
 
 # Start the server
-CMD [ "npm", "run", "dev" ]
+CMD sh -c "npm run build && npm run start"
+

@@ -2,3 +2,4 @@
 /models/*
 !models/download-models.sh
 public/*
+dist
