@@ -18,7 +18,7 @@ export const generate = createAsyncThunk(
 	"job/generate",
 	async (data: Job, thunkAPI) => {
 		try {
-			const res = await api.post("/generate", data);
+			const res = await api.post("/job/generate", data);
 			const jobId = res.data.jobId;
 			return res.data;
 		} catch (err: any) {

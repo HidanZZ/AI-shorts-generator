@@ -24,6 +24,14 @@ export async function redditQuestionImage(text: any, outputPath: any) {
             overflow: hidden;
             position: relative;
         }
+        article.size-default {
+            transform: scale(2);
+        }
+        
+        article:focus {
+            outline: none;
+        }
+        
 
         .blur-background {
             background: linear-gradient(to right, #3700b3, #03dac6);
@@ -44,7 +52,6 @@ export async function redditQuestionImage(text: any, outputPath: any) {
             border-radius: 25px;
         }
     </style>
-    <div class="blur-background"></div>
     <article class="size-default m-redesign ctaExperiment content" id="t3_15b3kz3"
         style="width: 500px; background-color: white">
         <div class="Post__header-wrapper">
@@ -165,9 +172,10 @@ export async function redditQuestionImage(text: any, outputPath: any) {
 	await page.setContent(htmlCode);
 	let elementSelector = "article";
 	// Modify the viewport size if needed
-	await page.setViewport({ width: 800, height: 600 });
+	await page.setViewport({ width: 1920, height: 1080 });
 
 	const elementHandle = await page.$(elementSelector);
+
 	if (!elementHandle) {
 		console.error(`Element with selector '${elementSelector}' not found.`);
 		await browser.close();
@@ -180,5 +188,4 @@ export async function redditQuestionImage(text: any, outputPath: any) {
 	});
 
 	await browser.close();
-	return imageBuffer.toString("base64");
 }

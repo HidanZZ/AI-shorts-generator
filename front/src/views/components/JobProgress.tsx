@@ -2,14 +2,16 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Typography } from "@mui/material";
 import LinearProgressWithLabel from "./LinearProgressWithLabel";
-import { useSelector } from "@/store";
+import { useDispatch, useSelector } from "@/store";
+import CancelIcon from "@mui/icons-material/Cancel";
+import DownloadIcon from "@mui/icons-material/Download";
 type JobStatus = {
 	status: string;
 	progress: number;
 	isFinished?: boolean;
 	videoUrl?: string;
 };
-function JobStatus({ setCompleted }: { setCompleted: any }) {
+function JobStatus() {
 	const { jobId } = useSelector((state) => state.job);
 	const [jobStatus, setJobStatus] = useState<JobStatus>({
 		status: "Unknown",
@@ -21,7 +23,7 @@ function JobStatus({ setCompleted }: { setCompleted: any }) {
 		if (!jobId || jobId === "") return;
 
 		const eventSource = new EventSource(
-			`${process.env.NEXT_PUBLIC_API_URL}/job-status/${jobId}`
+			`${process.env.NEXT_PUBLIC_API_URL}/job/status/${jobId}`
 		);
 
 		eventSource.onmessage = (event) => {
@@ -33,6 +35,8 @@ function JobStatus({ setCompleted }: { setCompleted: any }) {
 			console.log("Received jobStatus event: ", data);
 
 			setJobStatus(data);
+			console.log(!data.isFinished);
+
 			if (data.isFinished) {
 				eventSource.close();
 			}
@@ -65,6 +69,11 @@ function JobStatus({ setCompleted }: { setCompleted: any }) {
 							window.open(jobStatus.videoUrl);
 						}}
 					>
+						<DownloadIcon
+							sx={{
+								mr: 1,
+							}}
+						/>
 						Download
 					</Button>
 				)

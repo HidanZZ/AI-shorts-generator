@@ -273,7 +273,7 @@ export default function Generate() {
 						</Button>
 					</Grid>
 				</Grid>
-				<JobStatus setCompleted={setCompleted} />
+				<JobStatus />
 			</CardContent>
 		</Card>
 	);

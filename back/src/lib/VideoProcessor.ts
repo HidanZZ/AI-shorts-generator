@@ -1,13 +1,15 @@
 import { checkApiKeyExists } from "../utils/dataFileUtils";
 import { elevenlabsText2Speech } from "./elevenLabsApi";
 import fs from "fs";
-import os from "os";
+import { tempDir } from "../constants/processingPath";
+
 import path from "path";
 import asyncShell, {
 	escapeSingleQuotes,
 	toSeconds,
 	toTimeString,
 } from "../utils";
+import sharp from "sharp";
 import ffmpeg from "fluent-ffmpeg";
 import { DoneCallback, Job } from "bull";
 import { IAudioStrategy } from "./AudioStrategies";
@@ -54,6 +56,12 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	protected logger = (message: string) => {
 		this.job.progress({ message, progress: this.currentProgress });
 	};
+	protected async clearTempFiles() {
+		const files = fs.readdirSync(tempDir);
+		files.forEach((file) => {
+			fs.unlinkSync(path.join(tempDir, file));
+		});
+	}
 
 	public async getAudio(text: string, voice: string): Promise<string> {
 		const apiKey = checkApiKeyExists();
@@ -62,7 +70,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		}
 		const audioData = await elevenlabsText2Speech(apiKey, text, voice);
 		const timestamp = Date.now();
-		const tempFilePath = path.join(os.tmpdir(), "audio-" + timestamp + ".mp3");
+		const tempFilePath = path.join(tempDir, "audio-" + timestamp + ".mp3");
 		fs.writeFileSync(tempFilePath, audioData, "binary");
 		return tempFilePath;
 	}
@@ -76,9 +84,9 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		voice: string
 	): Promise<{ audio: string; subtitles: string }> {
 		const timestamp = Date.now();
-		const tempAudioPath = path.join(os.tmpdir(), `temp-audio-${timestamp}.mp3`);
+		const tempAudioPath = path.join(tempDir, `temp-audio-${timestamp}.mp3`);
 		const tempSubtitlesPath = path.join(
-			os.tmpdir(),
+			tempDir,
 			`temp-subtitles-${timestamp}.vtt`
 		);
 		const command = `edge-tts --voice en-US-ChristopherNeural  --text "${text}" --write-media ${tempAudioPath} --words-in-cue 1 --write-subtitles ${tempSubtitlesPath} --rate "+5%"`;
@@ -96,8 +104,8 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		audioPath2: string,
 		silenceDuration: number
 	): Promise<string> {
-		const silencePath = path.join(os.tmpdir(), "silence.m4a");
-		const outputPath = path.join(os.tmpdir(), "combined.m4a");
+		const silencePath = path.join(tempDir, "silence.m4a");
+		const outputPath = path.join(tempDir, "combined.m4a");
 		console.log("combineAudios");
 
 		// Generate silence
@@ -252,7 +260,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 					[
 						{
 							filter: "eq",
-							options: { brightness: 0.1 },
+							options: { brightness: 0.05 },
 							outputs: "brightened",
 						},
 						{
@@ -286,6 +294,24 @@ export abstract class VideoProcessor implements IAudioGenerator {
 			});
 		});
 	}
+
+	protected async resizeImage(
+		imagePath: string,
+		width: number
+	): Promise<string> {
+		const outputImagePath = imagePath + ".resized.png";
+		const imageDimensions = await this.getVideoDimensions(imagePath);
+		const aspectRatio = imageDimensions.width / imageDimensions.height;
+		await sharp(imagePath)
+			.resize({
+				width: Math.floor(width),
+				height: Math.round(width / aspectRatio),
+				fit: "contain", // keep aspect ratio, do not crop the image
+				background: { r: 0, g: 0, b: 0, alpha: 0 }, // fill with transparent background where needed
+			})
+			.toFile(outputImagePath);
+		return outputImagePath;
+	}
 	protected async insertImageInVideo(
 		videoPath: string,
 		imagePath: string,
@@ -298,9 +324,10 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		}
 
 		const totalFrames = await this.getTotalFrames(videoPath);
-
-		const imageDimensions = await this.getVideoDimensions(imagePath);
 		const videoDimensions = await this.getVideoDimensions(videoPath);
+		const newImageWidth = videoDimensions.width * 0.8;
+		const resizedImagePath = await this.resizeImage(imagePath, newImageWidth);
+		const imageDimensions = await this.getVideoDimensions(resizedImagePath);
 
 		const overlayX = (videoDimensions.width - imageDimensions.width) / 2;
 		const overlayY = (videoDimensions.height - imageDimensions.height) / 2;
@@ -308,7 +335,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		return new Promise((resolve, reject) => {
 			ffmpeg()
 				.input(videoPath)
-				.input(imagePath)
+				.input(resizedImagePath)
 				.complexFilter(
 					[
 						{
@@ -400,7 +427,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	}
 
 	protected async convertAudioToM4a(audioPath: string): Promise<string> {
-		const outputPath = path.join(os.tmpdir(), "temp-audio.m4a");
+		const outputPath = path.join(tempDir, "temp-audio.m4a");
 		return new Promise((resolve, reject) => {
 			ffmpeg(audioPath)
 				.outputOptions([

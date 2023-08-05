@@ -1,7 +1,8 @@
 import { DoneCallback, Job } from "bull";
 import { Transcription, VideoProcessor } from "./VideoProcessor";
 import path from "path";
-import os from "os";
+import { tempDir } from "../constants/processingPath";
+
 import fs from "fs";
 import { redditQuestionImage } from "../utils/image";
 import { checkVideoExists, downloadYoutubeVideo, parseVtt } from "../utils";
@@ -18,7 +19,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 		this.redditQuestion = redditQuestion;
 	}
 	protected async getQuestionImage() {
-		const questionImagePath = path.join(os.tmpdir(), "question-image.png");
+		const questionImagePath = path.join(tempDir, "question-image.png");
 		await redditQuestionImage(this.redditQuestion, questionImagePath);
 		return questionImagePath;
 	}
@@ -85,7 +86,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 		this.currentProgress = 50;
 		//copy video to tmp folder
 		const now = Date.now();
-		const videoPath = path.join(os.tmpdir(), `${now}.mp4`);
+		const videoPath = path.join(tempDir, `${now}.mp4`);
 		fs.copyFileSync(downloadedVidPath, videoPath);
 		//step 8: crop video to vertical
 		this.currentProgress = 60;
@@ -157,6 +158,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 			);
 
 			const videoUrl = await this.getVideoUrl(finalVid);
+			this.clearTempFiles();
 
 			this.done(null, { videoUrl });
 		} catch (error: any) {
