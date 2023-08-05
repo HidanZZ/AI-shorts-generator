@@ -22,18 +22,15 @@ import * as yup from "yup";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import api from "@/lib/axios";
+import { useDispatch, useSelector } from "@/store";
+import { addAsset, deleteAsset, getAssets } from "@/store/assets";
+import { Asset } from "@/types";
 
-type Asset = {
-	id: number;
-	name: string;
-	url: string;
-};
-
-type AssetForm = Omit<Asset, "id">;
+type AssetForm = Omit<Asset, "_id">;
 
 export default function Assets() {
-	const [assets, setAssets] = useState<Asset[]>([]);
-	const [loading, setLoading] = useState(true);
+	const { loading, error, assets } = useSelector((state) => state.assets);
+	const dispatch = useDispatch();
 	const [expanded, setExpanded] = useState(false);
 
 	const handleAddClick = () => {
@@ -63,52 +60,34 @@ export default function Assets() {
 		mode: "onSubmit",
 		resolver: yupResolver(schema),
 	});
-	const fetchAssets = async () => {
-		try {
-			const response = await api.get("/settings/assets"); // replace with your API endpoint
-			setAssets(response.data.assets);
-			setLoading(false);
-		} catch (err: any) {
-			console.log(err);
-			setLoading(false);
-			toast.error(err.response.data.message ?? "Failed to fetch assets");
-		}
-	};
+
 	useEffect(() => {
-		fetchAssets();
+		dispatch(getAssets());
 	}, []);
 
-	const handleDelete = async (id: number) => {
-		api
-			.delete(`/settings/assets/${id}`)
-			.then((res) => {
-				toast.success("Deleted Asset");
-				fetchAssets();
-			})
-			.catch((err) => {
-				toast.error(
-					err.response.data.message ??
-						"Failed to delete asset, Please try again later"
-				);
+	const handleDelete = async (id: string) => {
+		dispatch(deleteAsset(id))
+			.unwrap()
+			.then(() => {
+				toast.success("Asset deleted successfully");
 			});
 	};
 
 	const handleSave = async (data: AssetForm) => {
-		api
-			.post("/settings/assets", data)
-			.then((res) => {
-				toast.success("Saved Asset");
-				fetchAssets();
-				handleCancelClick();
-				reset();
-			})
-			.catch((err) => {
-				toast.error(
-					err.response.data.message ??
-						"Failed to save asset, Please try again later"
-				);
+		const { name, url } = data;
+		dispatch(addAsset({ name, url }))
+			.unwrap()
+			.then(() => {
+				toast.success("Asset added successfully");
+				reset(defaultValues);
+				setExpanded(false);
 			});
 	};
+	useEffect(() => {
+		if (error) {
+			toast.error(error ?? "An error occurred");
+		}
+	}, [error]);
 	return (
 		<Card>
 			<CardContent>
@@ -226,24 +205,26 @@ export default function Assets() {
 								</TableCell>
 							</TableRow>
 						)}
-						{assets.length === 0 && (
-							<TableRow>
-								<TableCell align='center' colSpan={3}>
-									No assets found
-								</TableCell>
-							</TableRow>
-						)}
-						{assets.map((asset) => (
-							<TableRow key={asset.id}>
-								<TableCell>{asset.name}</TableCell>
-								<TableCell>{asset.url}</TableCell>
-								<TableCell align='center'>
-									<IconButton onClick={() => handleDelete(asset.id)}>
-										<DeleteIcon />
-									</IconButton>
-								</TableCell>
-							</TableRow>
-						))}
+						{!assets ||
+							(assets.length === 0 && (
+								<TableRow>
+									<TableCell align='center' colSpan={3}>
+										No assets found
+									</TableCell>
+								</TableRow>
+							))}
+						{assets &&
+							assets.map((asset) => (
+								<TableRow key={asset._id}>
+									<TableCell>{asset.name}</TableCell>
+									<TableCell>{asset.url}</TableCell>
+									<TableCell align='center'>
+										<IconButton onClick={() => handleDelete(asset._id)}>
+											<DeleteIcon />
+										</IconButton>
+									</TableCell>
+								</TableRow>
+							))}
 					</TableBody>
 				</Table>
 			</CardContent>

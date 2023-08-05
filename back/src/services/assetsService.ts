@@ -1,76 +1,35 @@
-import { assetsPath, checkAssetsExists } from "../utils/dataFileUtils";
-import fs from "fs";
-import { Asset, AssetFile } from "../types/data";
+import { IAsset, Asset } from "../models/assets";
 
-export async function addAssetService(name: string, url: string) {
-	let data: AssetFile = { assets: [] };
-
-	// Check if the file exists
-	if (fs.existsSync(assetsPath)) {
-		// Read and parse existing data
-		const rawData = fs.readFileSync(assetsPath, "utf8");
-		data = JSON.parse(rawData);
-	}
-
-	// add the new asset
-	const newId = data.assets.length + 1;
-	data.assets.push({ id: newId, name, url });
-
-	fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
+async function addAssetService(name: string, url: string) {
+	const asset = new Asset({ name, url });
+	await asset.save();
+	return asset;
 }
 
-export async function deleteAssetService(id: string) {
-	let data: AssetFile = { assets: [] };
-
-	// Check if the file exists
-	if (fs.existsSync(assetsPath)) {
-		// Read and parse existing data
-		const rawData = fs.readFileSync(assetsPath, "utf8");
-		data = JSON.parse(rawData);
-	}
-
-	// remove the asset
-	const index = data.assets.findIndex((asset) => asset.id === parseInt(id));
-	console.log(index);
-
-	if (index !== -1) {
-		data.assets.splice(index, 1);
-	}
-
-	fs.writeFileSync(assetsPath, JSON.stringify(data), "utf8");
+async function deleteAssetService(id: string) {
+	const asset = await Asset.findByIdAndDelete(id);
+	return asset;
 }
 
-export async function getAssetByIdService(id: string): Promise<Asset> {
-	const assets = checkAssetsExists();
-
-	if (assets) {
-		const asset = assets.assets.find(
-			(asset: Asset) => asset.id === parseInt(id)
-		);
-		if (asset) {
-			return asset;
-		} else {
-			throw new Error("no asset found");
-		}
-	} else {
-		throw new Error("no assets found");
-	}
+async function getAssetByIdService(id: string): Promise<IAsset> {
+	const asset = await Asset.findById(id);
+	return asset!;
 }
 
-export async function updateAsset(video: Asset) {
-	const assets = checkAssetsExists();
-
-	if (assets) {
-		const index = assets.assets.findIndex(
-			(asset: Asset) => asset.id === video.id
-		);
-		if (index !== -1) {
-			assets.assets[index] = video;
-			fs.writeFileSync(assetsPath, JSON.stringify(assets), "utf8");
-		} else {
-			throw new Error("no asset found");
-		}
-	} else {
-		throw new Error("no assets found");
-	}
+async function updateAsset(asset: IAsset) {
+	const updated = Asset.findByIdAndUpdate(asset.id, asset);
+	return updated;
 }
+
+async function getAssetsService() {
+	const assets = await Asset.find();
+	return assets;
+}
+
+export const assetsService = {
+	addAssetService,
+	deleteAssetService,
+	getAssetByIdService,
+	updateAsset,
+	getAssetsService,
+};

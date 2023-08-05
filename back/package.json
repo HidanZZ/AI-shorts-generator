@@ -29,7 +29,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "fluent-ffmpeg": "^2.1.2",
+    "mongoose": "^7.4.2",
     "puppeteer": "^20.9.0",
+    "redis": "^4.6.7",
     "shelljs": "^0.8.5",
     "ytdl-core": "^4.11.5"
   }

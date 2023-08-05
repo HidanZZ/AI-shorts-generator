@@ -5,8 +5,9 @@ import stream from "stream";
 import { Transcription } from "../lib/VideoProcessor";
 import path from "path";
 import os from "os";
-import { getAssetByIdService, updateAsset } from "../services/assetsService";
 import { Asset } from "../types/data";
+import { IAsset } from "../models/assets";
+import { assetsService } from "../services/assetsService";
 export interface IShellOptions {
 	silent: boolean; // true: won't print to console
 	async: boolean;
@@ -82,7 +83,7 @@ export function parseVtt(filePath: string | undefined): Transcription[] {
 }
 
 export async function checkVideoExists(videoId: string, logger: any) {
-	const video = await getAssetByIdService(videoId);
+	const video: IAsset = await assetsService.getAssetByIdService(videoId);
 	if (!video) {
 		throw new Error("Video not found");
 	}
@@ -94,7 +95,7 @@ export async function checkVideoExists(videoId: string, logger: any) {
 }
 
 export async function downloadYoutubeVideo(
-	video: Asset,
+	video: IAsset,
 	log: any
 ): Promise<string> {
 	const url = video.url;
@@ -115,7 +116,7 @@ export async function downloadYoutubeVideo(
 		ytdl(url, { format: videoFormat })
 			.on("finish", async () => {
 				video.downloadedPath = videoPath;
-				await updateAsset(video);
+				await assetsService.updateAsset(video);
 				resolve(video.downloadedPath);
 			})
 			.on("error", (err) => {

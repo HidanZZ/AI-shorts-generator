@@ -1,122 +1,39 @@
 "use client";
-import {
-	Box,
-	Card,
-	CardContent,
-	Button,
-	Grid,
-	IconButton,
-	InputLabel,
-	TextField,
-	Skeleton,
-} from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { Card, CardContent, Grid } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "@/store";
+import { getKeys } from "@/store/apikeys";
+import ApiKeyInput from "@/views/components/ApiKeyInput";
+import { API_KEYS } from "@/constants/keys";
 import { toast } from "react-hot-toast";
-import api from "@/lib/axios";
-type ApiKey = {
-	elevenLabsApiKey: string;
-};
 
 export default function Settings() {
-	const [apiKey, setApiKey] = useState<ApiKey | null>(null);
-	const [showApiKey, setShowApiKey] = useState(false);
-	const [Loading, setLoading] = useState(true);
+	const dispatch = useDispatch();
+	const { error } = useSelector((state) => state.apikeys);
 
 	useEffect(() => {
-		api
-			.get("/settings/apikey")
-			.then((res) => {
-				setApiKey(res.data);
-				setLoading(false);
-			})
-			.catch((err) => {
-				setLoading(false);
-			});
+		dispatch(getKeys());
 	}, []);
 
-	const handleSave = async () => {
-		api
-			.post("/settings/apikey", apiKey)
-			.then(() => {
-				toast.success("Saved API Key");
-			})
-			.catch((err) => {
-				toast.error("Failed to save API Key");
-				console.error(err);
-			});
-	};
-	const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setApiKey({
-			...apiKey,
-			elevenLabsApiKey: event.target.value,
-		});
-	};
+	useEffect(() => {
+		if (error) {
+			console.log(error);
+			toast.error(error.message ?? "An error occured");
+		}
+	}, [error]);
+
 	return (
 		<Card>
 			<CardContent>
 				<Grid container spacing={3}>
 					<Grid item xs={12}>
-						<Box
-							sx={{
-								display: "flex",
-								justifyContent: "space-between",
-								alignItems: "center",
-							}}
-						>
-							<InputLabel
-								sx={{
-									color: "primary.main",
-									mx: 2,
-								}}
-								htmlFor='my-input'
-							>
-								Eleven Labs API Key
-							</InputLabel>
-							{Loading ? (
-								<Skeleton
-									variant='rectangular'
-									height={56}
-									sx={{
-										flexGrow: 1,
-									}}
-								/>
-							) : (
-								<>
-									<TextField
-										sx={{
-											mx: 2,
-											flexGrow: 1,
-										}}
-										id='my-input'
-										type={showApiKey ? "text" : "password"}
-										aria-describedby='my-helper-text'
-										value={apiKey?.elevenLabsApiKey ?? ""}
-										onChange={handleApiKeyChange}
-									/>
-									<Box>
-										<IconButton
-											sx={{
-												mx: 2,
-											}}
-											onClick={() => setShowApiKey(!showApiKey)}
-										>
-											{showApiKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
-										</IconButton>
-										<Button
-											variant='contained'
-											sx={{
-												mx: 2,
-											}}
-											onClick={handleSave}
-										>
-											Save
-										</Button>
-									</Box>
-								</>
-							)}
-						</Box>
+						<ApiKeyInput
+							label='ElevenLabs API Key'
+							apiKey={API_KEYS.ELEVENLABS}
+						/>
+					</Grid>
+					<Grid item xs={12}>
+						<ApiKeyInput label='OpenAI API Key' apiKey={API_KEYS.OPENAI} />
 					</Grid>
 				</Grid>
 			</CardContent>

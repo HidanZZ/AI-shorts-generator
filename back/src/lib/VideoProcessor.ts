@@ -165,17 +165,45 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		const randomStartTime = Math.floor(Math.random() * maxStartTime);
 		return randomStartTime;
 	}
+
 	// protected async cropVideoToVertical(
 	// 	videoPath: string,
-	// 	endTime: number | undefined
+	// 	from: number,
+	// 	duration: number | undefined
 	// ): Promise<void> {
+	// 	if (!duration) {
+	// 		throw new Error("duration is undefined");
+	// 	}
 	// 	const tmpPath = videoPath + ".tmp.mp4";
 	// 	const totalFrames = await this.getTotalFrames(videoPath);
 
+	// 	let videoDurationInSeconds = await this.getDuration(videoPath);
+	// 	let startTime = from;
+
+	// 	// If videoDurationInSeconds is undefined, assume a default value or stop function
+	// 	if (videoDurationInSeconds === undefined) {
+	// 		videoDurationInSeconds = 0; // Or handle this case as per your requirement
+	// 	}
+
+	// 	// If duration is undefined, assume it is the rest of the video
+
+	// 	// Check if from + duration is more than video duration, if so, adjust start time
+	// 	if (startTime + duration > videoDurationInSeconds) {
+	// 		// Get a random start time that doesn't exceed the duration limit
+	// 		startTime = Math.random() * (videoDurationInSeconds - duration);
+	// 	}
+
 	// 	return new Promise((resolve, reject) => {
 	// 		ffmpeg(videoPath)
+	// 			.setStartTime(startTime)
+	// 			.setDuration(duration)
+	// 			.complexFilter([
+	// 				{
+	// 					filter: "eq",
+	// 					options: { brightness: 1.3 },
+	// 				},
+	// 			])
 	// 			.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
-	// 			.outputOptions("-to", `${endTime}`) // Trim to endTime
 	// 			.save(tmpPath)
 	// 			.on("end", () => {
 	// 				fs.rename(tmpPath, videoPath, (err) => {
@@ -220,7 +248,22 @@ export abstract class VideoProcessor implements IAudioGenerator {
 			ffmpeg(videoPath)
 				.setStartTime(startTime)
 				.setDuration(duration)
-				.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
+				.complexFilter(
+					[
+						{
+							filter: "eq",
+							options: { brightness: 0.1 },
+							outputs: "brightened",
+						},
+						{
+							filter: "crop",
+							options: "ih*9/16:ih",
+							inputs: "brightened",
+							outputs: "cropped",
+						},
+					],
+					"cropped"
+				)
 				.save(tmpPath)
 				.on("end", () => {
 					fs.rename(tmpPath, videoPath, (err) => {

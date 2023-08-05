@@ -55,7 +55,7 @@ The backend requires a Linux environment due to certain C++ dependencies. For Wi
    ```
 4. install whisper for transcription. Here's a simple command for Ubuntu.
    ```bash
-   pip3 install --upgrade --no-deps --force-reinstall git+https://github.com/linto-ai/whisper-timestamped
+   pip3 install --upgrade  --force-reinstall git+https://github.com/linto-ai/whisper-timestamped
    ```
 5. install Google Chrome for puppetee if not already installed. Here's a simple command for Ubuntu.
 

@@ -4,7 +4,12 @@ import routes from "./routes";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
+import { redis } from "./dataSources/redis";
+import { mongoose } from "./dataSources/mongo";
 dotenv.config();
+
+redis.run();
+mongoose.run();
 
 const app = express();
 export const port = process.env.PORT || 3000;

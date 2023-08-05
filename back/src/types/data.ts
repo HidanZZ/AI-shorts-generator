@@ -1,3 +1,5 @@
+import { API_KEYS } from "../constants/keys";
+
 export type AssetFile = {
 	assets: Asset[];
 };
@@ -9,6 +11,4 @@ export type Asset = {
 	downloadedPath?: string;
 };
 
-export type ApiKeys = {
-	elevenLabsApiKey: string;
-};
+export type ApiKeys = API_KEYS.ELEVENLABS | API_KEYS.OPENAI;

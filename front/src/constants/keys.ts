@@ -1,0 +1,4 @@
+export enum API_KEYS {
+	ELEVENLABS = "ELEVENLABS",
+	OPENAI = "OPENAI",
+}

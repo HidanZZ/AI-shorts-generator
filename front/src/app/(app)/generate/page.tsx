@@ -19,12 +19,16 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import VoiceSelection from "@/views/components/VoiceSelection";
 import BackgroundVidSelection from "@/views/components/BackgroundVidSelection";
-import JobStatus from "@/views/components/TestJobProgress";
+import JobStatus from "@/views/components/JobProgress";
 import api from "@/lib/axios";
+import { Job } from "@/types";
+import { useDispatch } from "@/store";
+import { generate } from "@/store/job";
 
 export default function Generate() {
 	const [jobId, setJobId] = React.useState<string>("");
 	const [completed, setCompleted] = React.useState<boolean>(true);
+	const dispatch = useDispatch();
 	const schema = yup.object().shape({
 		redditQuestion: yup.string().required(),
 		redditAnswer: yup.string().required(),
@@ -33,7 +37,7 @@ export default function Generate() {
 		useElevenLabs: yup.boolean().required(),
 		useRandomVideoTime: yup.boolean().required().default(false),
 	});
-	const defaultValues = {
+	const defaultValues: Job = {
 		redditQuestion: "",
 		redditAnswer: "",
 		voice: "",
@@ -54,11 +58,8 @@ export default function Generate() {
 		mode: "onSubmit",
 		resolver: yupResolver(schema),
 	});
-	const onSubmit = (data: any) => {
-		api.post("/generate", data).then((res) => {
-			setJobId(res.data.jobId);
-			setCompleted(false);
-		});
+	const onSubmit = (data: Job) => {
+		dispatch(generate(data));
 	};
 
 	const useElevenLabs = watch("useElevenLabs") as boolean;
@@ -121,7 +122,7 @@ export default function Generate() {
 									id='reddit-answer'
 									type='text'
 									multiline
-									charLimit={1000}
+									charLimit={3000}
 									error={Boolean(errors.redditAnswer)}
 									helperText={errors.redditAnswer?.message}
 									{...field}
@@ -272,7 +273,7 @@ export default function Generate() {
 						</Button>
 					</Grid>
 				</Grid>
-				<JobStatus jobId={jobId} setCompleted={setCompleted} />
+				<JobStatus setCompleted={setCompleted} />
 			</CardContent>
 		</Card>
 	);

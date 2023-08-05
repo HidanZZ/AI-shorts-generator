@@ -15,12 +15,8 @@ import {
 } from "@mui/material";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-
-type Video = {
-	id: string;
-	name: string;
-	url: string;
-};
+import { useDispatch, useSelector } from "@/store";
+import { getAssets } from "@/store/assets";
 
 function BackgroundVidSelection({
 	value,
@@ -29,8 +25,8 @@ function BackgroundVidSelection({
 	value: string;
 	onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-	const [videos, setVideos] = useState<Video[]>([]);
-	const [loading, setLoading] = useState(true);
+	const { assets, loading } = useSelector((state) => state.assets);
+	const dispatch = useDispatch();
 	const [error, setError] = useState<string | null>(null);
 	const [displayCount, setDisplayCount] = useState(0);
 	const [amountToDisplay, setAmountToDisplay] = useState(5);
@@ -53,31 +49,23 @@ function BackgroundVidSelection({
 	}, [mdUp, smUp, xsUp, displayCount]);
 
 	useEffect(() => {
-		// 👨‍💻 Replace this URL with the actual endpoint to fetch the data
-		const url = "/settings/assets";
-
-		api
-			.get(url)
-			.then((response) => {
-				setVideos(response.data.assets);
-				setLoading(false);
-				if (response.data.assets.length > 0) {
-					onChange({
-						target: {
-							value: response.data.assets[0].id,
-						},
-					} as React.ChangeEvent<HTMLInputElement>);
-				} else {
-					setError("No videos found, please go to assets page and add videos");
-				}
-			})
-			.catch((error) => {
-				toast.error("Error fetching videos");
-				setError(
-					"Error fetching videos, please go to assets page and add videos"
-				);
-			});
+		dispatch(getAssets());
 	}, []);
+
+	useEffect(() => {
+		if (assets) {
+			if (assets.length === 0) {
+				setError("No Background Videos Found");
+			} else {
+				setError(null);
+				onChange({
+					target: {
+						value: assets[0]._id,
+					},
+				} as React.ChangeEvent<HTMLInputElement>);
+			}
+		}
+	}, [assets, onChange]);
 
 	const handleShowMore = () => {
 		setDisplayCount((currentCount) => currentCount + amountToDisplay);
@@ -107,31 +95,39 @@ function BackgroundVidSelection({
 				{loading && (
 					<Skeleton variant='rectangular' width='100%' height='100px' />
 				)}
-				{videos.slice(0, displayCount).map((video) => (
-					<Grid item key={video.id} className='fade-in' xs={12} sm={6} md={2}>
-						<Card
-							sx={{
-								display: "flex",
-								flexDirection: "column",
-								mb: 2,
-								cursor: "pointer",
-							}}
-							onClick={() => {
-								handleCardClick(video.id);
-							}}
+				{assets &&
+					assets.slice(0, displayCount).map((video) => (
+						<Grid
+							item
+							key={video._id}
+							className='fade-in'
+							xs={12}
+							sm={6}
+							md={2}
 						>
-							<Box sx={{ display: "flex", alignItems: "center" }}>
-								<FormControlLabel
-									value={video.id}
-									control={<Radio />}
-									label={video.name}
-									labelPlacement='start'
-									sx={{ ml: 0 }}
-								/>
-							</Box>
-						</Card>
-					</Grid>
-				))}
+							<Card
+								sx={{
+									display: "flex",
+									flexDirection: "column",
+									mb: 2,
+									cursor: "pointer",
+								}}
+								onClick={() => {
+									handleCardClick(video._id);
+								}}
+							>
+								<Box sx={{ display: "flex", alignItems: "center" }}>
+									<FormControlLabel
+										value={video._id}
+										control={<Radio />}
+										label={video.name}
+										labelPlacement='start'
+										sx={{ ml: 0 }}
+									/>
+								</Box>
+							</Card>
+						</Grid>
+					))}
 			</Grid>
 			{error && (
 				<Box
@@ -143,7 +139,7 @@ function BackgroundVidSelection({
 					{error}
 				</Box>
 			)}
-			{videos.length != 0 && (
+			{assets && assets.length != 0 && (
 				<Box
 					sx={{
 						display: "flex",
@@ -151,7 +147,7 @@ function BackgroundVidSelection({
 						mt: 2,
 					}}
 				>
-					{displayCount < videos.length && (
+					{displayCount < assets.length && (
 						<Button sx={{ mx: 2 }} onClick={handleShowMore}>
 							Show More
 						</Button>

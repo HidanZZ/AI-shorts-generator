@@ -5,7 +5,6 @@ import os from "os";
 import fs from "fs";
 import { redditQuestionImage } from "../utils/image";
 import { checkVideoExists, downloadYoutubeVideo, parseVtt } from "../utils";
-import { getAssetByIdService } from "../services/assetsService";
 
 export class RedditVideoProcessor extends VideoProcessor {
 	private redditQuestion: string;
