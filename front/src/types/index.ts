@@ -9,10 +9,11 @@ export type Asset = {
 };
 
 export type Job = {
-	redditQuestion: string;
-	redditAnswer: string;
+	redditQuestion: string | undefined;
+	redditAnswer: string | undefined;
 	voice: string;
 	video: string;
 	useElevenLabs: boolean;
 	useRandomVideoTime: boolean;
+	useAiGeneratedStory: boolean;
 };

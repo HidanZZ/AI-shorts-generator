@@ -26,16 +26,32 @@ import { useDispatch } from "@/store";
 import { generate } from "@/store/job";
 
 export default function Generate() {
-	const [jobId, setJobId] = React.useState<string>("");
-	const [completed, setCompleted] = React.useState<boolean>(true);
 	const dispatch = useDispatch();
 	const schema = yup.object().shape({
-		redditQuestion: yup.string().required(),
-		redditAnswer: yup.string().required(),
+		redditQuestion: yup.string().when("useAiGeneratedStory", {
+			is: false,
+			then(schema) {
+				return schema.required();
+			},
+			otherwise(schema) {
+				return schema.default("");
+			},
+		}),
+		redditAnswer: yup.string().when("useAiGeneratedStory", {
+			is: false,
+			then(schema) {
+				return schema.required();
+			},
+			otherwise(schema) {
+				return schema.default("");
+			},
+		}),
+
 		voice: yup.string().default(""),
 		video: yup.string().required(),
 		useElevenLabs: yup.boolean().required(),
 		useRandomVideoTime: yup.boolean().required().default(false),
+		useAiGeneratedStory: yup.boolean().required().default(false),
 	});
 	const defaultValues: Job = {
 		redditQuestion: "",
@@ -44,6 +60,7 @@ export default function Generate() {
 		video: "",
 		useElevenLabs: false,
 		useRandomVideoTime: false,
+		useAiGeneratedStory: false,
 	};
 
 	const {
@@ -63,73 +80,97 @@ export default function Generate() {
 	};
 
 	const useElevenLabs = watch("useElevenLabs") as boolean;
+	const useAiGeneratedStory = watch("useAiGeneratedStory") as boolean;
 
 	return (
 		<Card>
 			<CardContent>
 				<Grid container spacing={3}>
 					<Grid item xs={12}>
-						<InputLabel
-							sx={{
-								color: "primary.main",
-								mx: 2,
-								mb: 1,
-							}}
-							htmlFor='reddit-question'
-						>
-							Reddit Question
-						</InputLabel>
 						<Controller
-							name='redditQuestion'
+							name='useAiGeneratedStory'
 							control={control}
-							render={({ field }) => (
-								<CharCountTextfield
-									sx={{
-										mx: 2,
-									}}
-									fullWidth
-									id='reddit-question'
-									type='text'
-									multiline
-									// charLimit={200}
-									error={Boolean(errors.redditQuestion)}
-									helperText={errors.redditQuestion?.message}
-									{...field}
+							render={({ field: { onChange, value } }) => (
+								<FormControlLabel
+									checked={value}
+									onChange={onChange}
+									control={<Checkbox />}
+									label={"Use AI Generated Story"}
+									labelPlacement='start'
+									sx={{ ml: 2 }}
 								/>
 							)}
 						/>
+						{errors.useAiGeneratedStory && (
+							<p>{errors.useAiGeneratedStory.message}</p>
+						)}
 					</Grid>
-					<Grid item xs={12}>
-						<InputLabel
-							sx={{
-								color: "primary.main",
-								mx: 2,
-								mb: 1,
-							}}
-							htmlFor='reddit-answer'
-						>
-							Reddit Answer
-						</InputLabel>
-						<Controller
-							name='redditAnswer'
-							control={control}
-							render={({ field }) => (
-								<CharCountTextfield
+					{!useAiGeneratedStory && (
+						<>
+							<Grid item xs={12}>
+								<InputLabel
 									sx={{
+										color: "primary.main",
 										mx: 2,
+										mb: 1,
 									}}
-									fullWidth
-									id='reddit-answer'
-									type='text'
-									multiline
-									charLimit={3000}
-									error={Boolean(errors.redditAnswer)}
-									helperText={errors.redditAnswer?.message}
-									{...field}
+									htmlFor='reddit-question'
+								>
+									Reddit Question
+								</InputLabel>
+								<Controller
+									name='redditQuestion'
+									control={control}
+									render={({ field }) => (
+										<CharCountTextfield
+											sx={{
+												mx: 2,
+											}}
+											fullWidth
+											id='reddit-question'
+											type='text'
+											multiline
+											// charLimit={200}
+											error={Boolean(errors.redditQuestion)}
+											helperText={errors.redditQuestion?.message}
+											{...field}
+										/>
+									)}
 								/>
-							)}
-						/>
-					</Grid>
+							</Grid>
+							<Grid item xs={12}>
+								<InputLabel
+									sx={{
+										color: "primary.main",
+										mx: 2,
+										mb: 1,
+									}}
+									htmlFor='reddit-answer'
+								>
+									Reddit Answer
+								</InputLabel>
+								<Controller
+									name='redditAnswer'
+									control={control}
+									render={({ field }) => (
+										<CharCountTextfield
+											sx={{
+												mx: 2,
+											}}
+											fullWidth
+											id='reddit-answer'
+											type='text'
+											multiline
+											charLimit={3000}
+											error={Boolean(errors.redditAnswer)}
+											helperText={errors.redditAnswer?.message}
+											{...field}
+										/>
+									)}
+								/>
+							</Grid>
+						</>
+					)}
 					<Grid item xs={12}>
 						<Card>
 							<InputLabel

@@ -2,34 +2,81 @@ import { DoneCallback, Job } from "bull";
 import { Transcription, VideoProcessor } from "./VideoProcessor";
 import path from "path";
 import { tempDir } from "../constants/processingPath";
-
+import { TextProcessing } from "./TextProcessing";
 import fs from "fs";
 import { redditQuestionImage } from "../utils/image";
-import { checkVideoExists, downloadYoutubeVideo, parseVtt } from "../utils";
+import { checkVideoExists, parseVtt } from "../utils";
 
 export class RedditVideoProcessor extends VideoProcessor {
 	private redditQuestion: string;
 	private redditAnswer: string;
 	private momemtOfSilence: number = 1;
-
+	private useAiGeneratedStory: boolean = false;
 	constructor(job: Job<any>, done: DoneCallback) {
 		super(job, done);
-		const { redditAnswer, redditQuestion } = job.data;
+		const { redditAnswer, redditQuestion, useAiGeneratedStory } = job.data;
+		this.useAiGeneratedStory = useAiGeneratedStory;
 		this.redditAnswer = redditAnswer;
 		this.redditQuestion = redditQuestion;
+	}
+	protected async generateAnswer(question: string) {
+		let current_realistic_score = 0;
+		let answer: string = "";
+		while (current_realistic_score < 8) {
+			try {
+				answer = await TextProcessing.generateRedditAnswer(question);
+				const score = JSON.parse(
+					await TextProcessing.judgeRedditAnswer(answer)
+				).score;
+				if (!score) throw new Error("No score from openai");
+				current_realistic_score = score;
+				console.log("current_realistic_score", current_realistic_score);
+			} catch (err: any) {
+				this.done(err);
+			}
+		}
+		return answer;
+	}
+	protected async generateQuestion(): Promise<string> {
+		let question: string = "";
+		while (question.length < 40) {
+			try {
+				question = await TextProcessing.generateRedditQuestion();
+			} catch (err: any) {
+				this.done(err);
+			}
+		}
+		return question;
 	}
 	protected async getQuestionImage() {
 		const questionImagePath = path.join(tempDir, "question-image.png");
 		await redditQuestionImage(this.redditQuestion, questionImagePath);
 		return questionImagePath;
 	}
+	protected async textProcessing() {
+		this.currentProgress = 0;
+
+		let question = this.redditQuestion;
+		let answer = this.redditAnswer;
+		if (this.useAiGeneratedStory) {
+			this.logger("Generating question ");
+			question = await this.generateQuestion();
+			this.logger("Generating answer ");
+			answer = await this.generateAnswer(question);
+		} else {
+			this.logger("Fixing answer grammar");
+			answer = await TextProcessing.fixGrammar(answer);
+		}
+
+		this.redditQuestion = question;
+		this.redditAnswer = answer;
+	}
 	protected async audioProcessing() {
 		if (!this.audioStrategy) {
 			throw new Error("No audio strategy is defined");
 		}
-
-		this.currentProgress = 0;
-		this.logger("Generating question audio from text");
+		this.currentProgress = 8;
+		this.logger("Generating audio from text");
 		const { audio: tempQuestionAudio } = await this.audioStrategy.generateAudio(
 			this.redditQuestion,
 			this.voice,
@@ -38,7 +85,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 		const { audio: tempAnswerAudio, subtitles } =
 			await this.audioStrategy.generateAudio(this.redditAnswer, this.voice);
 		// Step 2: getting transcription
-		this.currentProgress = 10;
+		this.currentProgress = 15;
 		this.logger("Getting transcription");
 		console.log("[audioProcessing] subtitles", subtitles);
 
@@ -141,6 +188,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 	}
 	public async process() {
 		try {
+			await this.textProcessing();
 			const {
 				combinedAudioPath,
 				questionAudioDuration,

@@ -12,3 +12,5 @@ export type Asset = {
 };
 
 export type ApiKeys = API_KEYS.ELEVENLABS | API_KEYS.OPENAI;
+
+export type OpenAIModel = "gpt-3.5-turbo" | "gpt-4";

@@ -27,6 +27,7 @@ export async function startJob(req: Request, res: Response) {
 		video,
 		useElevenLabs,
 		useRandomVideoTime,
+		useAiGeneratedStory,
 	} = await req.body;
 
 	const job = await videoProcessingQueue.add({
@@ -36,6 +37,7 @@ export async function startJob(req: Request, res: Response) {
 		video,
 		useElevenLabs,
 		useRandomVideoTime,
+		useAiGeneratedStory,
 	});
 
 	return res.json({ jobId: job.id });
