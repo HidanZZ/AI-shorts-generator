@@ -52,6 +52,7 @@ export default function Generate() {
 		useElevenLabs: yup.boolean().required(),
 		useRandomVideoTime: yup.boolean().required().default(false),
 		useAiGeneratedStory: yup.boolean().required().default(false),
+		isYoutube: yup.boolean().required().default(false),
 	});
 	const defaultValues: Job = {
 		redditQuestion: "",
@@ -61,6 +62,7 @@ export default function Generate() {
 		useElevenLabs: false,
 		useRandomVideoTime: false,
 		useAiGeneratedStory: false,
+		isYoutube: false,
 	};
 
 	const {
@@ -104,6 +106,21 @@ export default function Generate() {
 						{errors.useAiGeneratedStory && (
 							<p>{errors.useAiGeneratedStory.message}</p>
 						)}
+						<Controller
+							name='isYoutube'
+							control={control}
+							render={({ field: { onChange, value } }) => (
+								<FormControlLabel
+									checked={value}
+									onChange={onChange}
+									control={<Checkbox />}
+									label={"Youtube Short"}
+									labelPlacement='start'
+									sx={{ ml: 2 }}
+								/>
+							)}
+						/>
+						{errors.isYoutube && <p>{errors.isYoutube.message}</p>}
 					</Grid>
 					{!useAiGeneratedStory && (
 						<>

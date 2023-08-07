@@ -4,6 +4,7 @@ import jobRouter from "./jobRoute";
 import keysRoute from "./keysRoute";
 import { Router } from "express";
 import { openAiService } from "../services/openAiService";
+import { ClaudeService } from "../services/claudeAiService";
 
 const router = Router();
 
@@ -15,14 +16,10 @@ router.get("/", (req, res) => {
 	res.send("Hello World!");
 });
 router.post("/test", async (req, res) => {
-	const { system, text, maxTokens, temp } = req.body;
+	const { text } = req.body;
 	try {
-		const resss = await openAiService.createOpenAIChatCompletion({
-			system: system,
+		const resss = await ClaudeService.createClaudeAiChatCompletion({
 			prompt: text,
-			model: "gpt-3.5-turbo",
-			maxTokens: maxTokens,
-			temperature: temp,
 		});
 		res.send(resss);
 	} catch (err) {

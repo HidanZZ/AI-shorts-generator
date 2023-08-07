@@ -6,7 +6,7 @@ import { tempDir } from "../constants/processingPath";
 export const textToSpeech = async (
 	text: string,
 	output_file: string,
-	voice: string = "en-US-ChristopherNeural"
+	voice: string = "en-CA-LiamNeural"
 ): Promise<{ audio: string; subtitles: string }> => {
 	voice = "en-CA-LiamNeural";
 	// voice = 'en-GB-RyanNeural'

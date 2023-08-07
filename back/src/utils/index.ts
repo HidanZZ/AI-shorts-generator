@@ -1,7 +1,8 @@
 import fs from "fs";
 import ytdl from "ytdl-core";
 import shell from "shelljs";
-import stream from "stream";
+import ffmpeg from "fluent-ffmpeg";
+
 import { Transcription } from "../lib/VideoProcessor";
 import path from "path";
 import os from "os";
@@ -94,14 +95,28 @@ export async function checkVideoExists(videoId: string, logger: any) {
 	return downloadYoutubeVideo(video, logger);
 }
 
+export function getWordCount(text: string) {
+	return text.split(" ").length;
+}
+
 export async function downloadYoutubeVideo(
 	video: IAsset,
 	log: any
 ): Promise<string> {
 	const url = video.url;
 	const videoInfo = await ytdl.getInfo(url);
+	//save video info to file
+	const videoInfoPath = path.join(
+		os.homedir(),
+		`${videoInfo.videoDetails.videoId}.json`
+	);
+	fs.writeFileSync(videoInfoPath, JSON.stringify(videoInfo));
+
 	const videoFormat = ytdl.chooseFormat(videoInfo.formats, {
 		quality: "highestvideo",
+		filter(format) {
+			return format.container === "mp4";
+		},
 	});
 	const downloadedVideosFolder = path.join(os.homedir(), "videos");
 	//check if folder exists
@@ -115,6 +130,8 @@ export async function downloadYoutubeVideo(
 	return new Promise((resolve, reject) => {
 		ytdl(url, { format: videoFormat })
 			.on("finish", async () => {
+				//convert to mp4 if not mp4
+
 				video.downloadedPath = videoPath;
 				await assetsService.updateAsset(video);
 				resolve(video.downloadedPath);

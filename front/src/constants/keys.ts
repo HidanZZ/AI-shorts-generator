@@ -1,4 +1,5 @@
 export enum API_KEYS {
 	ELEVENLABS = "ELEVENLABS",
 	OPENAI = "OPENAI",
+	CLAUDE = "CLAUDE",
 }

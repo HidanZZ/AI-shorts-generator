@@ -84,7 +84,7 @@ export async function redditQuestionImage(text: any, outputPath: any) {
                     <div class="PostHeader__metadata"></div>
                 </div>
                 <h1 class="PostHeader__post-title-line"
-                    style="font-family: 'Neue Helvetica BQ', sans-serif; font-weight: 700;max-width: 450px;">
+                    style="font-size:1.8rem;font-family: 'Neue Helvetica BQ', sans-serif; font-weight: 700;max-width: 450px;">
                     ${text}
                 </h1>
             </header>

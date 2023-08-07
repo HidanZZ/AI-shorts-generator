@@ -38,7 +38,6 @@ async function createOpenAIChatCompletion({
 		{ role: "system", content: system },
 		{ role: "user", content: prompt },
 	];
-	console.log("messages", messages);
 
 	try {
 		const chatCompletion = await openaiInstance.createChatCompletion({

@@ -1,11 +1,12 @@
 // controllers/voiceController.ts
 import { Request, Response } from "express";
 import { getVoices } from "../lib/elevenLabsApi";
-import { checkApiKeyExists } from "../utils/dataFileUtils";
 import { textToSpeech } from "../utils/audio";
+import { keysService } from "../services/keysService";
+import { API_KEYS } from "../constants/keys";
 
 export async function getVoicesController(req: Request, res: Response) {
-	const apiKey = checkApiKeyExists();
+	const apiKey = await keysService.getKey(API_KEYS.ELEVENLABS);
 	if (!apiKey) {
 		return res.status(404).json({ message: "no api key found" });
 	}

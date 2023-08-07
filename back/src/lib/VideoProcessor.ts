@@ -1,4 +1,3 @@
-import { checkApiKeyExists } from "../utils/dataFileUtils";
 import { elevenlabsText2Speech } from "./elevenLabsApi";
 import fs from "fs";
 import { tempDir } from "../constants/processingPath";
@@ -16,6 +15,8 @@ import { IAudioStrategy } from "./AudioStrategies";
 import { copyFile, unlink } from "fs/promises";
 import { port } from "..";
 import { whisperTranscribe } from "../utils/audio";
+import { keysService } from "../services/keysService";
+import { API_KEYS } from "../constants/keys";
 const fontPath = path.join(__dirname, "../../fonts/font.otf");
 
 interface IAudioGenerator {
@@ -33,6 +34,7 @@ export type Transcription = {
 };
 export abstract class VideoProcessor implements IAudioGenerator {
 	protected job: Job<any>;
+	protected useGPU: boolean = true;
 	protected done: DoneCallback;
 	protected voice: string;
 	protected video: string;
@@ -64,7 +66,7 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	}
 
 	public async getAudio(text: string, voice: string): Promise<string> {
-		const apiKey = checkApiKeyExists();
+		const apiKey = await keysService.getKey(API_KEYS.ELEVENLABS);
 		if (!apiKey) {
 			throw new Error("no api key found");
 		}
@@ -83,13 +85,14 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		text: string,
 		voice: string
 	): Promise<{ audio: string; subtitles: string }> {
+		const voice1 = "en-CA-LiamNeural";
 		const timestamp = Date.now();
 		const tempAudioPath = path.join(tempDir, `temp-audio-${timestamp}.mp3`);
 		const tempSubtitlesPath = path.join(
 			tempDir,
 			`temp-subtitles-${timestamp}.vtt`
 		);
-		const command = `edge-tts --voice en-US-ChristopherNeural  --text "${text}" --write-media ${tempAudioPath} --words-in-cue 1 --write-subtitles ${tempSubtitlesPath} --rate "+5%"`;
+		const command = `edge-tts --voice ${voice1}  --text "${text}" --write-media ${tempAudioPath} --words-in-cue 1 --write-subtitles ${tempSubtitlesPath} --rate "+5%"`;
 		console.log("command", command);
 
 		await asyncShell(command);
@@ -114,7 +117,19 @@ export abstract class VideoProcessor implements IAudioGenerator {
 
 		// Combine audios
 		return new Promise((resolve, reject) => {
-			ffmpeg()
+			let processor = ffmpeg();
+			if (this.useGPU) {
+				processor
+					.videoCodec("h264_nvenc") // Use Nvidia's hardware-accelerated H264 encoder
+					.outputOptions("-rc:v", "vbr") // Variable bitrate
+					.outputOptions("-cq", "18"); // Maximum quantizer scale
+			} else {
+				processor
+					.videoCodec("libx264") // Use software (CPU) encoding
+					.outputOptions("-preset", "slow")
+					.outputOptions("-crf", "18");
+			}
+			processor
 				.input(audioPath1)
 				.input(silencePath)
 				.input(audioPath2)
@@ -174,57 +189,6 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		return randomStartTime;
 	}
 
-	// protected async cropVideoToVertical(
-	// 	videoPath: string,
-	// 	from: number,
-	// 	duration: number | undefined
-	// ): Promise<void> {
-	// 	if (!duration) {
-	// 		throw new Error("duration is undefined");
-	// 	}
-	// 	const tmpPath = videoPath + ".tmp.mp4";
-	// 	const totalFrames = await this.getTotalFrames(videoPath);
-
-	// 	let videoDurationInSeconds = await this.getDuration(videoPath);
-	// 	let startTime = from;
-
-	// 	// If videoDurationInSeconds is undefined, assume a default value or stop function
-	// 	if (videoDurationInSeconds === undefined) {
-	// 		videoDurationInSeconds = 0; // Or handle this case as per your requirement
-	// 	}
-
-	// 	// If duration is undefined, assume it is the rest of the video
-
-	// 	// Check if from + duration is more than video duration, if so, adjust start time
-	// 	if (startTime + duration > videoDurationInSeconds) {
-	// 		// Get a random start time that doesn't exceed the duration limit
-	// 		startTime = Math.random() * (videoDurationInSeconds - duration);
-	// 	}
-
-	// 	return new Promise((resolve, reject) => {
-	// 		ffmpeg(videoPath)
-	// 			.setStartTime(startTime)
-	// 			.setDuration(duration)
-	// 			.complexFilter([
-	// 				{
-	// 					filter: "eq",
-	// 					options: { brightness: 1.3 },
-	// 				},
-	// 			])
-	// 			.outputOptions("-vf", "crop=ih*9/16:ih") // Crop to 9:16 ratio
-	// 			.save(tmpPath)
-	// 			.on("end", () => {
-	// 				fs.rename(tmpPath, videoPath, (err) => {
-	// 					if (err) reject(err);
-	// 					else resolve();
-	// 				});
-	// 			})
-	// 			.on("error", reject)
-	// 			.on("progress", (progress) => {
-	// 				this.logger(`Cropping video: ${progress.frames} / ${totalFrames}`);
-	// 			});
-	// 	});
-	// }
 	protected async cropVideoToVertical(
 		videoPath: string,
 		from: number,
@@ -233,7 +197,8 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		if (!duration) {
 			throw new Error("duration is undefined");
 		}
-		const tmpPath = videoPath + ".tmp.mp4";
+		const format = path.extname(videoPath);
+		const tmpPath = videoPath + ".tmp" + format;
 		const totalFrames = await this.getTotalFrames(videoPath);
 
 		let videoDurationInSeconds = await this.getDuration(videoPath);
@@ -253,14 +218,26 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		}
 
 		return new Promise((resolve, reject) => {
-			ffmpeg(videoPath)
+			let processor = ffmpeg(videoPath);
+			if (this.useGPU) {
+				processor
+					.videoCodec("h264_nvenc") // Use Nvidia's hardware-accelerated H264 encoder
+					.outputOptions("-rc:v", "vbr") // Variable bitrate
+					.outputOptions("-cq", "18"); // Maximum quantizer scale
+			} else {
+				processor
+					.videoCodec("libx264") // Use software (CPU) encoding
+					.outputOptions("-preset", "slow")
+					.outputOptions("-crf", "18");
+			}
+			processor
 				.setStartTime(startTime)
 				.setDuration(duration)
 				.complexFilter(
 					[
 						{
 							filter: "eq",
-							options: { brightness: 0.05 },
+							options: { brightness: 0.02 },
 							outputs: "brightened",
 						},
 						{
@@ -318,7 +295,8 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		startSeconds: number,
 		durationSeconds: number | undefined
 	): Promise<void> {
-		const tmpPath = videoPath + ".tmp.mp4";
+		const format = path.extname(videoPath);
+		const tmpPath = videoPath + ".tmp" + format;
 		if (!durationSeconds) {
 			throw new Error("durationSeconds is undefined");
 		}
@@ -333,7 +311,19 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		const overlayY = (videoDimensions.height - imageDimensions.height) / 2;
 
 		return new Promise((resolve, reject) => {
-			ffmpeg()
+			let processor = ffmpeg();
+			if (this.useGPU) {
+				processor
+					.videoCodec("h264_nvenc") // Use Nvidia's hardware-accelerated H264 encoder
+					.outputOptions("-rc:v", "vbr") // Variable bitrate
+					.outputOptions("-cq", "18"); // Maximum quantizer scale
+			} else {
+				processor
+					.videoCodec("libx264") // Use software (CPU) encoding
+					.outputOptions("-preset", "slow")
+					.outputOptions("-crf", "18");
+			}
+			processor
 				.input(videoPath)
 				.input(resizedImagePath)
 				.complexFilter(
@@ -389,21 +379,33 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		videoPath: string,
 		audioPath: string
 	): Promise<void> {
-		const tmpPath = videoPath + ".tmp.mp4";
+		const format = path.extname(videoPath);
+		const tmpPath = videoPath + ".tmp" + format;
 
 		const totalFrames = await this.getTotalFrames(videoPath);
 
 		const convertedAudioPath = await this.convertAudioToM4a(audioPath);
 
 		return new Promise((resolve, reject) => {
-			ffmpeg()
+			let processor = ffmpeg();
+			if (this.useGPU) {
+				processor
+					.videoCodec("h264_nvenc") // Use Nvidia's hardware-accelerated H264 encoder
+					.outputOptions("-rc:v", "vbr") // Variable bitrate
+					.outputOptions("-cq", "18"); // Maximum quantizer scale
+			} else {
+				processor
+					.videoCodec("libx264") // Use software (CPU) encoding
+					.outputOptions("-preset", "slow")
+					.outputOptions("-crf", "18");
+			}
+			processor
 				.input(videoPath)
 				.input(convertedAudioPath)
 				.outputOptions([
 					"-y", // overwrite output file if exists
 					"-map 0:v", // map the video from the first input
 					"-map 1:a", // map the audio from the second input
-					"-c:v libx264", // use libx264 codec for video
 					"-c:a aac", // use aac codec for audio
 				])
 				.on("start", function (commandLine) {
@@ -474,8 +476,8 @@ export abstract class VideoProcessor implements IAudioGenerator {
 		transcriptions: Transcription[]
 	): Promise<string> {
 		const totalFrames = await this.getTotalFrames(videoPath);
-		console.log("writeTranscriptionOnVideo");
-		const tmpPath = videoPath + ".tmp.mp4";
+		const format = path.extname(videoPath);
+		const tmpPath = videoPath + ".tmp" + format;
 
 		return new Promise((resolve, reject) => {
 			// Define an array to store all the filters
@@ -483,18 +485,28 @@ export abstract class VideoProcessor implements IAudioGenerator {
 
 			// Create the filters for each transcription
 			transcriptions.forEach((transcript, index) => {
-				console.log("start", transcript.start, "end", transcript.end);
-
 				filters.push(
 					`drawtext=enable='between(t,${toSeconds(
 						transcript.start
 					)},${toSeconds(transcript.end)})': text=' ${escapeSingleQuotes(
 						transcript.speech
-					)}':fontfile='${fontPath}':fontcolor='white': fontsize='h/20': x='(w-text_w)/2': y='(h-text_h)/2': borderw=5: shadowcolor=black: shadowx=8: shadowy=8`
+					)}':fontfile='${fontPath}':fontcolor='white': fontsize='h/16': x='(w-text_w)/2': y='(h-text_h)/2': borderw=5: shadowcolor=black: shadowx=8: shadowy=8`
 				);
 			});
 
-			ffmpeg(videoPath)
+			let processor = ffmpeg(videoPath);
+			if (this.useGPU) {
+				processor
+					.videoCodec("h264_nvenc") // Use Nvidia's hardware-accelerated H264 encoder
+					.outputOptions("-rc:v", "vbr") // Variable bitrate
+					.outputOptions("-cq", "18"); // Maximum quantizer scale
+			} else {
+				processor
+					.videoCodec("libx264") // Use software (CPU) encoding
+					.outputOptions("-preset", "slow")
+					.outputOptions("-crf", "18");
+			}
+			processor
 				// .inputOptions("-report")
 				.videoFilters(filters)
 				.on("end", () => {
@@ -512,8 +524,9 @@ export abstract class VideoProcessor implements IAudioGenerator {
 				.save(tmpPath);
 		});
 	}
-	public async getVideoUrl(videoPath: string): Promise<string> {
-		const videoName = path.basename(videoPath);
+	public async getVideoUrl(videoPath: string, title: string): Promise<string> {
+		const videoExtension = path.extname(videoPath);
+		const videoName = `${title}${videoExtension}`;
 		const newVideoPath = path.resolve(
 			__dirname,
 			"..",

@@ -5,29 +5,43 @@ import { tempDir } from "../constants/processingPath";
 import { TextProcessing } from "./TextProcessing";
 import fs from "fs";
 import { redditQuestionImage } from "../utils/image";
-import { checkVideoExists, parseVtt } from "../utils";
+import { checkVideoExists, getWordCount, parseVtt } from "../utils";
+import { JobData } from "../types/data";
 
 export class RedditVideoProcessor extends VideoProcessor {
 	private redditQuestion: string;
 	private redditAnswer: string;
 	private momemtOfSilence: number = 1;
 	private useAiGeneratedStory: boolean = false;
-	constructor(job: Job<any>, done: DoneCallback) {
+	private isYoutube: boolean = false;
+	constructor(job: Job<JobData>, done: DoneCallback) {
 		super(job, done);
-		const { redditAnswer, redditQuestion, useAiGeneratedStory } = job.data;
+		const { redditAnswer, redditQuestion, useAiGeneratedStory, isYoutube } =
+			job.data;
 		this.useAiGeneratedStory = useAiGeneratedStory;
-		this.redditAnswer = redditAnswer;
-		this.redditQuestion = redditQuestion;
+		this.redditAnswer = redditAnswer ?? "";
+		this.redditQuestion = redditQuestion ?? "";
+		this.isYoutube = isYoutube;
+		this.momemtOfSilence = this.isYoutube ? 0.5 : 1;
 	}
 	protected async generateAnswer(question: string) {
 		let current_realistic_score = 0;
 		let answer: string = "";
 		while (current_realistic_score < 8) {
 			try {
-				answer = await TextProcessing.generateRedditAnswer(question);
-				const score = JSON.parse(
-					await TextProcessing.judgeRedditAnswer(answer)
-				).score;
+				answer = await TextProcessing.generateRedditAnswer(
+					question,
+					this.isYoutube
+				);
+				const word_count = getWordCount(answer);
+				console.log("word_count", word_count);
+
+				if (word_count > 150 && this.isYoutube) {
+					continue;
+				}
+				const score = await this.getAverageScore(answer);
+				console.log("average score", score);
+
 				if (!score) throw new Error("No score from openai");
 				current_realistic_score = score;
 				console.log("current_realistic_score", current_realistic_score);
@@ -36,6 +50,19 @@ export class RedditVideoProcessor extends VideoProcessor {
 			}
 		}
 		return answer;
+	}
+	protected async getAverageScore(answer: string) {
+		return Promise.all([
+			TextProcessing.judgeRedditAnswer(answer),
+			TextProcessing.judgeRedditAnswer(answer),
+			TextProcessing.judgeRedditAnswer(answer),
+		]).then((scores: any) => {
+			const averageScore =
+				scores.reduce((acc: number, score: any) => {
+					return acc + JSON.parse(score).score;
+				}, 0) / scores.length;
+			return averageScore;
+		});
 	}
 	protected async generateQuestion(): Promise<string> {
 		let question: string = "";
@@ -52,6 +79,11 @@ export class RedditVideoProcessor extends VideoProcessor {
 		const questionImagePath = path.join(tempDir, "question-image.png");
 		await redditQuestionImage(this.redditQuestion, questionImagePath);
 		return questionImagePath;
+	}
+	protected async getYouTubeMetadata() {
+		const [title, description] =
+			await TextProcessing.generateTitleDescriptionDict(this.redditAnswer);
+		return { title, description };
 	}
 	protected async textProcessing() {
 		this.currentProgress = 0;
@@ -90,10 +122,6 @@ export class RedditVideoProcessor extends VideoProcessor {
 		console.log("[audioProcessing] subtitles", subtitles);
 
 		const improvedAnswerTranscription = parseVtt(subtitles);
-		console.log(
-			"[audioProcessing] improvedAnswerTranscription",
-			improvedAnswerTranscription
-		);
 
 		// Step 5: combine audios
 		this.currentProgress = 20;
@@ -133,7 +161,9 @@ export class RedditVideoProcessor extends VideoProcessor {
 		this.currentProgress = 50;
 		//copy video to tmp folder
 		const now = Date.now();
-		const videoPath = path.join(tempDir, `${now}.mp4`);
+		const format = path.extname(downloadedVidPath);
+		const videoPath = path.join(tempDir, `${now}${format}`);
+
 		fs.copyFileSync(downloadedVidPath, videoPath);
 		//step 8: crop video to vertical
 		this.currentProgress = 60;
@@ -181,8 +211,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 			adjustedTranscriptions
 		);
 		// Step 10: Done
-		this.currentProgress = 100;
-		this.logger("Done");
+		this.currentProgress = 99;
 
 		return finalVid;
 	}
@@ -204,9 +233,22 @@ export class RedditVideoProcessor extends VideoProcessor {
 				questionAudioDuration,
 				adjustedTranscriptions
 			);
-
-			const videoUrl = await this.getVideoUrl(finalVid);
+			this.logger("finalizing");
+			const { title, description } = await this.getYouTubeMetadata();
+			const videoUrl = await this.getVideoUrl(finalVid, title);
+			//save title and description to file
+			const videoInfo = path.resolve(
+				__dirname,
+				"..",
+				"..",
+				"public",
+				`${title}.json`
+			);
+			fs.writeFileSync(videoInfo, JSON.stringify({ title, description }));
 			this.clearTempFiles();
+
+			this.currentProgress = 100;
+			this.logger("Done");
 
 			this.done(null, { videoUrl });
 		} catch (error: any) {

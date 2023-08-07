@@ -3,7 +3,7 @@ import Queue, { Job } from "bull";
 import { Request, Response } from "express";
 import { RedditVideoProcessor } from "../lib/RedditVideoProcesseur";
 import { EdgeTTSStrategy, ElevenLabsStrategy } from "../lib/AudioStrategies";
-
+import { JobData } from "../types/data";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 
@@ -28,7 +28,8 @@ export async function startJob(req: Request, res: Response) {
 		useElevenLabs,
 		useRandomVideoTime,
 		useAiGeneratedStory,
-	} = await req.body;
+		isYoutube,
+	}: JobData = await req.body;
 
 	const job = await videoProcessingQueue.add({
 		redditAnswer,
@@ -38,6 +39,7 @@ export async function startJob(req: Request, res: Response) {
 		useElevenLabs,
 		useRandomVideoTime,
 		useAiGeneratedStory,
+		isYoutube,
 	});
 
 	return res.json({ jobId: job.id });

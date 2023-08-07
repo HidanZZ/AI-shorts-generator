@@ -35,6 +35,9 @@ export default function Settings() {
 					<Grid item xs={12}>
 						<ApiKeyInput label='OpenAI API Key' apiKey={API_KEYS.OPENAI} />
 					</Grid>
+					<Grid item xs={12}>
+						<ApiKeyInput label='Claude Session key' apiKey={API_KEYS.CLAUDE} />
+					</Grid>
 				</Grid>
 			</CardContent>
 		</Card>
