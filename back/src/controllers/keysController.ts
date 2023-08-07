@@ -1,7 +1,7 @@
 import { keysService } from "../services/keysService";
 import { Request, Response } from "express";
 import { ApiKeys } from "../types/data";
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
 
 export async function getApiKey(req: Request, res: Response) {
 	const { key } = req.params;

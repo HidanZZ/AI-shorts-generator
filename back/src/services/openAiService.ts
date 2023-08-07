@@ -1,6 +1,6 @@
 import { Configuration, OpenAIApi, ChatCompletionRequestMessage } from "openai";
 import { keysService } from "./keysService";
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
 import { OpenAIModel } from "../types/data";
 
 let openai: OpenAIApi | null = null;

@@ -16,7 +16,8 @@ import { copyFile, unlink } from "fs/promises";
 import { port } from "..";
 import { whisperTranscribe } from "../utils/audio";
 import { keysService } from "../services/keysService";
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
+import { TextProcessing } from "./TextProcessing";
 const fontPath = path.join(__dirname, "../../fonts/font.otf");
 
 interface IAudioGenerator {
@@ -101,7 +102,11 @@ export abstract class VideoProcessor implements IAudioGenerator {
 			subtitles: tempSubtitlesPath,
 		};
 	}
-
+	protected async getYouTubeMetadata(text: string) {
+		const [title, description] =
+			await TextProcessing.generateTitleDescriptionDict(text);
+		return { title, description };
+	}
 	protected async combineAudios(
 		audioPath1: string,
 		audioPath2: string,

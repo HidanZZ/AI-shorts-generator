@@ -4,14 +4,32 @@ import { Request, Response } from "express";
 import { RedditVideoProcessor } from "../lib/RedditVideoProcesseur";
 import { EdgeTTSStrategy, ElevenLabsStrategy } from "../lib/AudioStrategies";
 import { JobData } from "../types/data";
+import { VideoTypes } from "../constants";
+import { StoryVideoProcesseur } from "../lib/StoryVideoProcesseur";
 // Setup the job queue
 const videoProcessingQueue = new Queue("video processing");
 
-videoProcessingQueue.process(async (job, done) => {
-	// const videoProcessor = job.data.isReddit
-	// 	? new RedditVideoProcessor(job)
-	// 	: new YoutubeVideoProcessor(job);
-	const videoProcessor = new RedditVideoProcessor(job, done);
+videoProcessingQueue.process(async (job: Job<JobData>, done) => {
+	let videoProcessor;
+	console.log("[queue] videoType", job.data.videoType);
+
+	switch (job.data.videoType) {
+		case VideoTypes.ASKREDDIT:
+			console.log("[queue] ASKREDDIT");
+
+			videoProcessor = new RedditVideoProcessor(job, done);
+			break;
+		case VideoTypes.STORY:
+			console.log("[queue] STORY");
+			videoProcessor = new StoryVideoProcesseur(job, done);
+			break;
+
+		default:
+			console.log("[queue] default");
+			videoProcessor = new RedditVideoProcessor(job, done);
+			break;
+	}
+
 	const audioStrategy = job.data.useElevenLabs
 		? new ElevenLabsStrategy(videoProcessor)
 		: new EdgeTTSStrategy(videoProcessor);
@@ -29,7 +47,10 @@ export async function startJob(req: Request, res: Response) {
 		useRandomVideoTime,
 		useAiGeneratedStory,
 		isYoutube,
+		videoType,
+		story,
 	}: JobData = await req.body;
+	console.log("[controller] story", story);
 
 	const job = await videoProcessingQueue.add({
 		redditAnswer,
@@ -40,6 +61,8 @@ export async function startJob(req: Request, res: Response) {
 		useRandomVideoTime,
 		useAiGeneratedStory,
 		isYoutube,
+		videoType,
+		story,
 	});
 
 	return res.json({ jobId: job.id });

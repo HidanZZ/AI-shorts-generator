@@ -1,4 +1,4 @@
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
 import { redis } from "../dataSources/redis";
 import { ApiKeys } from "../types/data";
 

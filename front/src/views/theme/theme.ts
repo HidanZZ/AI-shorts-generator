@@ -92,6 +92,24 @@ const theme = createTheme({
 				},
 			},
 		},
+		MuiTab: {
+			styleOverrides: {
+				root: {
+					border: "1px solid #000000", // Black border
+					boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)", // Slight shadow
+					color: "#000000", // Black text
+					backgroundColor: "#ffffff", // White background
+					"&:hover": {
+						backgroundColor: "#000000", // Black background on hover
+						color: "#ffffff", // White text on hover
+					},
+					"&.Mui-selected": {
+						backgroundColor: "#000000", // Black background on hover
+						color: "#ffffff", // White text on hover
+					},
+				},
+			},
+		},
 	},
 });
 

@@ -80,11 +80,7 @@ export class RedditVideoProcessor extends VideoProcessor {
 		await redditQuestionImage(this.redditQuestion, questionImagePath);
 		return questionImagePath;
 	}
-	protected async getYouTubeMetadata() {
-		const [title, description] =
-			await TextProcessing.generateTitleDescriptionDict(this.redditAnswer);
-		return { title, description };
-	}
+
 	protected async textProcessing() {
 		this.currentProgress = 0;
 
@@ -234,7 +230,9 @@ export class RedditVideoProcessor extends VideoProcessor {
 				adjustedTranscriptions
 			);
 			this.logger("finalizing");
-			const { title, description } = await this.getYouTubeMetadata();
+			const { title, description } = await this.getYouTubeMetadata(
+				this.redditAnswer
+			);
 			const videoUrl = await this.getVideoUrl(finalVid, title);
 			//save title and description to file
 			const videoInfo = path.resolve(

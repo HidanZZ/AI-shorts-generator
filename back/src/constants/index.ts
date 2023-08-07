@@ -3,3 +3,8 @@ export enum API_KEYS {
 	OPENAI = "OPENAI",
 	CLAUDE = "CLAUDE",
 }
+
+export enum VideoTypes {
+	ASKREDDIT = "ASKREDDIT",
+	STORY = "STORY",
+}

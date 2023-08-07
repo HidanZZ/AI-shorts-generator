@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { getVoices } from "../lib/elevenLabsApi";
 import { textToSpeech } from "../utils/audio";
 import { keysService } from "../services/keysService";
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
 
 export async function getVoicesController(req: Request, res: Response) {
 	const apiKey = await keysService.getKey(API_KEYS.ELEVENLABS);

@@ -17,4 +17,11 @@ export type Job = {
 	useRandomVideoTime: boolean;
 	useAiGeneratedStory: boolean;
 	isYoutube: boolean;
+	videoType: VideoTypes.ASKREDDIT | VideoTypes.STORY;
+	story: string | undefined;
 };
+
+export enum VideoTypes {
+	ASKREDDIT = "ASKREDDIT",
+	STORY = "STORY",
+}

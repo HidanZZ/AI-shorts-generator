@@ -2,6 +2,7 @@ import { openAiService } from "../services/openAiService";
 import { prompts } from "../constants/prompts";
 
 async function fixGrammar(text: string) {
+	console.log("[fixGrammar] text", text);
 	const response = await openAiService.createOpenAIChatCompletion({
 		system: prompts.FixGrammarPrompt.system,
 		prompt: text,

@@ -1,6 +1,6 @@
 //claude.ts
 import { keysService } from "./keysService";
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS } from "../constants";
 
 let claude: any | null = null;
 

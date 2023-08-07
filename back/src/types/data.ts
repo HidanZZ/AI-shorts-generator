@@ -1,4 +1,4 @@
-import { API_KEYS } from "../constants/keys";
+import { API_KEYS, VideoTypes } from "../constants";
 
 export type AssetFile = {
 	assets: Asset[];
@@ -18,10 +18,12 @@ export type OpenAIModel = "gpt-3.5-turbo" | "gpt-4";
 export type JobData = {
 	redditQuestion: string | null | undefined;
 	redditAnswer: string | null | undefined;
+	story: string | null | undefined;
 	voice: string;
 	video: string;
 	useElevenLabs: boolean;
 	useRandomVideoTime: boolean;
 	useAiGeneratedStory: boolean;
 	isYoutube: boolean;
+	videoType: VideoTypes.ASKREDDIT | VideoTypes.STORY;
 };
