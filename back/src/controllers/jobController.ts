@@ -101,7 +101,7 @@ export async function getJobStatus(req: Request, res: Response) {
 		}
 
 		const jobState = await job.getState();
-		const { progress, message } = job.progress();
+		const { progress, message, subtitles } = job.progress();
 
 		if (jobState === "completed" || jobState === "failed") {
 			const result = await job.finished(); // Get the result of the job
@@ -126,6 +126,7 @@ export async function getJobStatus(req: Request, res: Response) {
 				`event: jobStatus\ndata: ${JSON.stringify({
 					status: message,
 					progress,
+					subtitles,
 				})}\n\n`
 			);
 		}

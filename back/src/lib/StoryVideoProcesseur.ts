@@ -95,6 +95,15 @@ export class StoryVideoProcesseur extends VideoProcessor {
 		try {
 			await this.textProcessing();
 			const { audio, improvedTranscription } = await this.audioProcessing();
+			if (!this.job.data.modifiedSubtitles) {
+				await this.job.queue.pause();
+				console.log("[process] paused queue");
+
+				this.sendSubtitlesToUserForModification(improvedTranscription);
+				console.log("[process] sent subtitles to user for modification");
+
+				return;
+			}
 			const { videoPath } = await this.videoPreProcessing(audio);
 			const finalVid = await this.videoRendering(
 				videoPath,

@@ -59,6 +59,13 @@ export abstract class VideoProcessor implements IAudioGenerator {
 	protected logger = (message: string) => {
 		this.job.progress({ message, progress: this.currentProgress });
 	};
+	protected sendSubtitlesToUserForModification(subtitles: Transcription[]) {
+		this.job.progress({
+			message: "Waiting for user to modify subtitles",
+			progress: this.currentProgress,
+			subtitles,
+		});
+	}
 	protected async clearTempFiles() {
 		const files = fs.readdirSync(tempDir);
 		files.forEach((file) => {
