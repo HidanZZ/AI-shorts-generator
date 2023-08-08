@@ -18,6 +18,7 @@ export class StoryVideoProcesseur extends VideoProcessor {
 
 	protected async textProcessing() {
 		this.currentProgress = 1;
+		this.logger("Fixing grammar");
 		try {
 			this.story = await TextProcessing.fixGrammar(this.story);
 		} catch (err: any) {
@@ -56,6 +57,8 @@ export class StoryVideoProcesseur extends VideoProcessor {
 		this.currentProgress = 60;
 		this.logger("Cropping video");
 		const audioDuration = await this.getDuration(audio);
+		console.log("audioDuration", audioDuration);
+
 		let from = 0;
 		if (this.useRandomVideoTime) {
 			from = await this.getRandomeVideoStartTime(videoPath, audioDuration);

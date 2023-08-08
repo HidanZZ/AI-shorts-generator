@@ -50,7 +50,7 @@ export async function startJob(req: Request, res: Response) {
 		videoType,
 		story,
 	}: JobData = await req.body;
-	console.log("[controller] story", story);
+	console.log("[controller] added job", videoType);
 
 	const job = await videoProcessingQueue.add({
 		redditAnswer,
